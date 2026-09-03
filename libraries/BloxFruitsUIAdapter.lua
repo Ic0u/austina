@@ -139,7 +139,10 @@ function Adapter.Create(uiLibrary, options)
         local tab = {}
 
         function tab:Section(sectionName, side)
-            return wrapSection(page.CreateSection(tostring(sectionName), side == "Right"))
+            -- The legacy library used this argument for column placement. Austina's
+            -- second CreateSection argument controls whether a section exists, so
+            -- mapping "Left" to false silently removed half of the interface.
+            return wrapSection(page.CreateSection(tostring(sectionName)))
         end
 
         return tab
