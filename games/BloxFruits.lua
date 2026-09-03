@@ -3,7 +3,7 @@
 -- promotional clipboard action, and third-party remote loader are excluded.
 
 local BASE_URL = "https://raw.githubusercontent.com/Ic0u/austina/main/"
-local REMOTE_REVISION = "2026-09-03-full-port-2"
+local REMOTE_REVISION = "2026-09-03-full-port-3"
 local SUPPORTED_PLACES = {
     [2753915549] = true,
     [4442272183] = true,
@@ -43,6 +43,7 @@ end
 
 local UILibrary = loadRemoteModule("libraries/UILibrary.lua")
 local UIAdapter = loadRemoteModule("libraries/BloxFruitsUIAdapter.lua")
+local ESP = loadRemoteModule("libraries/ESPLibrary.lua")
 
 UILibrary.SetConfigFolder("Austina/BloxFruits")
 
@@ -8181,14 +8182,91 @@ Trailers:Toggle("Skill C",false, function(Value)
         end
     end)
 
-        Espbruh:Toggle("Esp Player", false, function(value)
-        ESPPlayer = value
+    ESP.Color = AccentSoft
+    ESP:Toggle(false)
+
+    Espbruh:Toggle("Enable Player ESP", false, function(value)
+        ESP:Toggle(value)
     end)
 
-    spawn(function()
-        while wait(2) do
-            if ESPPlayer then
-                UpdatePlayerChams()
+    Espbruh:Toggle("Show Teammates", true, function(value)
+        ESP.TeamMates = value
+    end)
+
+    Espbruh:Toggle("Show Tracers", false, function(value)
+        ESP.Tracers = value
+    end)
+
+    Espbruh:Toggle("Show Names", true, function(value)
+        ESP.Names = value
+    end)
+
+    Espbruh:Toggle("Show Distance", true, function(value)
+        ESP.Distances = value
+    end)
+
+    Espbruh:Toggle("Show Boxes", true, function(value)
+        ESP.Boxes = value
+    end)
+
+    Espbruh:Toggle("Show Team Color", true, function(value)
+        ESP.TeamColor = value
+    end)
+
+    Espbruh:Toggle("Show Chams", false, function(value)
+        ESP.Chams = value
+    end)
+
+    Espbruh:Toggle("Chams Through Walls", true, function(value)
+        ESP.ChamsAlwaysOnTop = value
+    end)
+
+    Espbruh:Slider("Chams Fill Transparency", false, 0, 1, 0.65, function(value)
+        ESP.ChamsFillTransparency = value
+    end)
+
+    Espbruh:Slider("Chams Outline Transparency", false, 0, 1, 0, function(value)
+        ESP.ChamsOutlineTransparency = value
+    end)
+
+    Espbruh:Toggle("Boxes Face Camera", false, function(value)
+        ESP.FaceCamera = value
+    end)
+
+    Espbruh:Toggle("Attach Tracers To Crosshair", false, function(value)
+        ESP.AttachShift = value and 2 or 1
+    end)
+
+    Espbruh:Toggle("Show Skeleton", false, function(value)
+        ESP.Skeletons = value
+    end)
+
+    Espbruh:Toggle("Show Health Bar", false, function(value)
+        ESP.HealthBars = value
+    end)
+
+    Espbruh:Toggle("Show Health Value", false, function(value)
+        ESP.HealthValues = value
+    end)
+
+    Espbruh:Toggle("Show Equipped Tool", false, function(value)
+        ESP.Tools = value
+    end)
+
+    Espbruh:Slider("ESP Line Thickness", true, 1, 5, 2, function(value)
+        ESP.Thickness = value
+        for _, box in pairs(ESP.Objects) do
+            if box.Components then
+                pcall(function()
+                    box.Components.Quad.Thickness = value
+                    box.Components.Tracer.Thickness = value
+                    for index = 1, 14 do
+                        local line = box.Components["Skeleton" .. index]
+                        if line then
+                            line.Thickness = value
+                        end
+                    end
+                end)
             end
         end
     end)
