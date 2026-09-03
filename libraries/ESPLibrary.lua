@@ -7,6 +7,7 @@ local ESP = {
     Color = Color3.fromRGB(255, 170, 0),
     FaceCamera = false,
     Names = true,
+    Skeletons = false,
     TeamColor = true,
     Thickness = 2,
     AttachShift = 1,
@@ -25,6 +26,31 @@ local mouse = plr:GetMouse()
 
 local V3new = Vector3.new
 local WorldToViewportPoint = cam.WorldToViewportPoint
+
+local MAX_SKELETON_LINES = 14
+local R6_BONES = {
+    { "Head", "Torso" },
+    { "Torso", "Left Arm" },
+    { "Torso", "Right Arm" },
+    { "Torso", "Left Leg" },
+    { "Torso", "Right Leg" },
+}
+local R15_BONES = {
+    { "Head", "UpperTorso" },
+    { "UpperTorso", "LowerTorso" },
+    { "UpperTorso", "LeftUpperArm" },
+    { "LeftUpperArm", "LeftLowerArm" },
+    { "LeftLowerArm", "LeftHand" },
+    { "UpperTorso", "RightUpperArm" },
+    { "RightUpperArm", "RightLowerArm" },
+    { "RightLowerArm", "RightHand" },
+    { "LowerTorso", "LeftUpperLeg" },
+    { "LeftUpperLeg", "LeftLowerLeg" },
+    { "LeftLowerLeg", "LeftFoot" },
+    { "LowerTorso", "RightUpperLeg" },
+    { "RightUpperLeg", "RightLowerLeg" },
+    { "RightLowerLeg", "RightFoot" },
+}
 
 --Functions--
 local function Draw(obj, props)
@@ -254,6 +280,45 @@ function boxBase:Update()
         end
     else
         self.Components.Tracer.Visible = false
+    end
+
+    for index = 1, MAX_SKELETON_LINES do
+        local line = self.Components["Skeleton" .. index]
+        if line then
+            line.Visible = false
+        end
+    end
+
+    if ESP.Skeletons and self.Object:IsA("Model") then
+        local bones = self.Object:FindFirstChild("UpperTorso") and R15_BONES or R6_BONES
+        for index, bone in ipairs(bones) do
+            local fromPart = self.Object:FindFirstChild(bone[1])
+            local toPart = self.Object:FindFirstChild(bone[2])
+            local componentName = "Skeleton" .. index
+            local line = self.Components[componentName]
+
+            if not line then
+                line = Draw("Line", {
+                    Thickness = ESP.Thickness,
+                    Color = color,
+                    Transparency = 1,
+                    Visible = false,
+                })
+                self.Components[componentName] = line
+            end
+
+            if fromPart and toPart and fromPart:IsA("BasePart") and toPart:IsA("BasePart") then
+                local fromPoint, fromVisible = WorldToViewportPoint(cam, fromPart.Position)
+                local toPoint, toVisible = WorldToViewportPoint(cam, toPart.Position)
+                if fromVisible and toVisible and fromPoint.Z > 0 and toPoint.Z > 0 then
+                    line.From = Vector2.new(fromPoint.X, fromPoint.Y)
+                    line.To = Vector2.new(toPoint.X, toPoint.Y)
+                    line.Color = color
+                    line.Thickness = ESP.Thickness
+                    line.Visible = true
+                end
+            end
+        end
     end
 end
 

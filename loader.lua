@@ -348,10 +348,13 @@ function Loader.Start(onComplete)
 
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = GUI_NAME
-    screenGui.DisplayOrder = 99999
+    screenGui.DisplayOrder = 1000000
     screenGui.IgnoreGuiInset = true
     screenGui.ResetOnSpawn = false
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    pcall(function()
+        screenGui.OnTopOfCoreBlur = true
+    end)
     parentGui(screenGui)
 
     local blur = Instance.new("BlurEffect")

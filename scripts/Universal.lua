@@ -33,6 +33,7 @@ local TeleportService  = game:GetService("TeleportService")
 local HttpService      = game:GetService("HttpService")
 local VirtualUser      = game:GetService("VirtualUser")
 local GuiService       = game:GetService("GuiService")
+local Lighting         = game:GetService("Lighting")
 local RunService       = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Stats            = game:GetService("Stats")
@@ -285,34 +286,6 @@ if ESP then
     end)
 
     PlayerESP.CreateToggle({
-        Title   = "Boxes",
-        Default = true,
-    }, function(state)
-        ESP.Boxes = state
-    end)
-
-    PlayerESP.CreateToggle({
-        Title   = "Names & Distance",
-        Default = true,
-    }, function(state)
-        ESP.Names = state
-    end)
-
-    PlayerESP.CreateToggle({
-        Title   = "Tracers",
-        Default = false,
-    }, function(state)
-        ESP.Tracers = state
-    end)
-
-    PlayerESP.CreateToggle({
-        Title   = "Team Colors",
-        Default = true,
-    }, function(state)
-        ESP.TeamColor = state
-    end)
-
-    PlayerESP.CreateToggle({
         Title   = "Show Teammates",
         Default = true,
     }, function(state)
@@ -320,11 +293,54 @@ if ESP then
     end)
 
     PlayerESP.CreateToggle({
-        Title   = "Face Camera",
+        Title   = "Show Tracers",
+        Default = false,
+    }, function(state)
+        ESP.Tracers = state
+    end)
+
+    PlayerESP.CreateToggle({
+        Title   = "Show Names & Distance",
+        Default = true,
+    }, function(state)
+        ESP.Names = state
+    end)
+
+    PlayerESP.CreateToggle({
+        Title   = "Show Boxes",
+        Default = true,
+    }, function(state)
+        ESP.Boxes = state
+    end)
+
+    PlayerESP.CreateToggle({
+        Title   = "Show Team Color",
+        Default = true,
+    }, function(state)
+        ESP.TeamColor = state
+    end)
+
+    PlayerESP.CreateToggle({
+        Title   = "Boxes Face Camera",
         Desc    = "Keep boxes facing your camera",
         Default = false,
     }, function(state)
         ESP.FaceCamera = state
+    end)
+
+    PlayerESP.CreateToggle({
+        Title   = "Attach Tracers To Crosshair",
+        Default = false,
+    }, function(state)
+        ESP.AttachShift = state and 2 or 1
+    end)
+
+    PlayerESP.CreateToggle({
+        Title   = "Show Skeleton",
+        Desc    = "Supports both R6 and R15 characters",
+        Default = false,
+    }, function(state)
+        ESP.Skeletons = state
     end)
 
     PlayerESP.CreateSlider({
@@ -339,6 +355,12 @@ if ESP then
                 pcall(function()
                     box.Components.Quad.Thickness = value
                     box.Components.Tracer.Thickness = value
+                    for index = 1, 14 do
+                        local line = box.Components["Skeleton" .. index]
+                        if line then
+                            line.Thickness = value
+                        end
+                    end
                 end)
             end
         end
@@ -348,6 +370,201 @@ else
         Title = "ESP unavailable: " .. tostring(espError),
     })
 end
+
+local WorldVisuals = VisualPage.CreateSection("World Visuals")
+
+local worldDefaults = {
+    Ambient = Lighting.Ambient,
+    Brightness = Lighting.Brightness,
+    ClockTime = Lighting.ClockTime,
+    FogEnd = Lighting.FogEnd,
+    FogStart = Lighting.FogStart,
+    GlobalShadows = Lighting.GlobalShadows,
+    OutdoorAmbient = Lighting.OutdoorAmbient,
+}
+
+local atmosphereDefaults = setmetatable({}, { __mode = "k" })
+local WorldState = {
+    Brightness = math.clamp(worldDefaults.Brightness, 0, 10),
+    BrightnessEnabled = false,
+    ClockTime = worldDefaults.ClockTime,
+    ClockTimeEnabled = false,
+    CustomFog = false,
+    FogEnd = math.clamp(worldDefaults.FogEnd, 0, 100000),
+    FogStart = math.clamp(worldDefaults.FogStart, 0, 10000),
+    Fullbright = false,
+    RemoveFog = false,
+    Running = true,
+}
+
+local function rememberAtmosphere(atmosphere)
+    if atmosphereDefaults[atmosphere] then
+        return
+    end
+
+    atmosphereDefaults[atmosphere] = {
+        Density = atmosphere.Density,
+        Haze = atmosphere.Haze,
+    }
+end
+
+local function restoreAtmospheres()
+    for atmosphere, defaults in pairs(atmosphereDefaults) do
+        if atmosphere and atmosphere.Parent then
+            atmosphere.Density = defaults.Density
+            atmosphere.Haze = defaults.Haze
+        end
+    end
+end
+
+local function restoreWorldVisuals()
+    Lighting.Ambient = worldDefaults.Ambient
+    Lighting.Brightness = worldDefaults.Brightness
+    Lighting.ClockTime = worldDefaults.ClockTime
+    Lighting.FogEnd = worldDefaults.FogEnd
+    Lighting.FogStart = worldDefaults.FogStart
+    Lighting.GlobalShadows = worldDefaults.GlobalShadows
+    Lighting.OutdoorAmbient = worldDefaults.OutdoorAmbient
+    restoreAtmospheres()
+end
+
+local function applyWorldVisuals()
+    if WorldState.Fullbright then
+        Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+        Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+        Lighting.GlobalShadows = false
+        if not WorldState.BrightnessEnabled then
+            Lighting.Brightness = 3
+        end
+    end
+
+    if WorldState.BrightnessEnabled then
+        Lighting.Brightness = WorldState.Brightness
+    end
+
+    if WorldState.ClockTimeEnabled then
+        Lighting.ClockTime = WorldState.ClockTime
+    end
+
+    if WorldState.RemoveFog then
+        Lighting.FogStart = 0
+        Lighting.FogEnd = 1000000
+        for _, child in ipairs(Lighting:GetChildren()) do
+            if child:IsA("Atmosphere") then
+                rememberAtmosphere(child)
+                child.Density = 0
+                child.Haze = 0
+            end
+        end
+    elseif WorldState.CustomFog then
+        Lighting.FogStart = math.min(WorldState.FogStart, WorldState.FogEnd)
+        Lighting.FogEnd = math.max(WorldState.FogStart, WorldState.FogEnd)
+    end
+end
+
+local worldConnection = RunService.RenderStepped:Connect(function()
+    if WorldState.Running then
+        applyWorldVisuals()
+    end
+end)
+
+WorldVisuals.CreateToggle({
+    Title   = "Fullbright",
+    Desc    = "Lift ambient light and disable shadows",
+    Default = false,
+}, function(state)
+    WorldState.Fullbright = state
+    if not state then
+        Lighting.Ambient = worldDefaults.Ambient
+        Lighting.OutdoorAmbient = worldDefaults.OutdoorAmbient
+        Lighting.GlobalShadows = worldDefaults.GlobalShadows
+        if not WorldState.BrightnessEnabled then
+            Lighting.Brightness = worldDefaults.Brightness
+        end
+    end
+end)
+
+WorldVisuals.CreateToggle({
+    Title   = "Override Brightness",
+    Default = false,
+}, function(state)
+    WorldState.BrightnessEnabled = state
+    if not state and not WorldState.Fullbright then
+        Lighting.Brightness = worldDefaults.Brightness
+    end
+end)
+
+WorldVisuals.CreateSlider({
+    Title   = "Brightness",
+    Min     = 0,
+    Max     = 10,
+    Default = WorldState.Brightness,
+    Precise = true,
+}, function(value)
+    WorldState.Brightness = value
+end)
+
+WorldVisuals.CreateToggle({
+    Title   = "Override Time",
+    Default = false,
+}, function(state)
+    WorldState.ClockTimeEnabled = state
+    if not state then
+        Lighting.ClockTime = worldDefaults.ClockTime
+    end
+end)
+
+WorldVisuals.CreateSlider({
+    Title   = "Clock Time",
+    Min     = 0,
+    Max     = 24,
+    Default = worldDefaults.ClockTime,
+    Precise = true,
+}, function(value)
+    WorldState.ClockTime = value
+end)
+
+WorldVisuals.CreateToggle({
+    Title   = "Remove Fog",
+    Desc    = "Also suppresses Atmosphere haze",
+    Default = false,
+}, function(state)
+    WorldState.RemoveFog = state
+    if not state then
+        Lighting.FogStart = worldDefaults.FogStart
+        Lighting.FogEnd = worldDefaults.FogEnd
+        restoreAtmospheres()
+    end
+end)
+
+WorldVisuals.CreateToggle({
+    Title   = "Custom Fog Distance",
+    Default = false,
+}, function(state)
+    WorldState.CustomFog = state
+    if not state and not WorldState.RemoveFog then
+        Lighting.FogStart = worldDefaults.FogStart
+        Lighting.FogEnd = worldDefaults.FogEnd
+    end
+end)
+
+WorldVisuals.CreateSlider({
+    Title   = "Fog Start",
+    Min     = 0,
+    Max     = 10000,
+    Default = WorldState.FogStart,
+}, function(value)
+    WorldState.FogStart = value
+end)
+
+WorldVisuals.CreateSlider({
+    Title   = "Fog End",
+    Min     = 0,
+    Max     = 100000,
+    Default = WorldState.FogEnd,
+}, function(value)
+    WorldState.FogEnd = value
+end)
 
 -- Settings
 
@@ -645,6 +862,7 @@ Interface.CreateButton({ Title = "Unload" }, function()
     if jumpConnection then jumpConnection:Disconnect() end
     if characterConnection then characterConnection:Disconnect() end
     if fpsConnection then fpsConnection:Disconnect() end
+    if worldConnection then worldConnection:Disconnect() end
 
     LocalState.WalkSpeedEnabled = false
     LocalState.JumpPowerEnabled = false
@@ -653,6 +871,8 @@ Interface.CreateButton({ Title = "Unload" }, function()
     restoreWalkSpeed()
     restoreJumpPower()
     restoreCollisions()
+    WorldState.Running = false
+    restoreWorldVisuals()
 
     if ESP then
         pcall(ESP.Toggle, ESP, false)
