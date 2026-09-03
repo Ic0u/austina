@@ -447,6 +447,7 @@ if ESP then
 
     PlayerESP.CreateToggle({
         Title   = "Show Distance",
+        Desc    = "Show [distance] studs below the feet",
         Default = true,
     }, function(state)
         ESP.Distances = state
@@ -534,7 +535,7 @@ if ESP then
 
     PlayerESP.CreateToggle({
         Title   = "Show Health Value",
-        Desc    = "Show exact HP at the lower-left side",
+        Desc    = "Show the exact number at the lower-left side",
         Default = false,
     }, function(state)
         ESP.HealthValues = state

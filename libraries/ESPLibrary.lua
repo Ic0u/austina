@@ -400,23 +400,36 @@ function boxBase:Update()
         self.Components.Quad.Visible = false
     end
 
-    local tagPosition, tagVisible
-    if ESP.Names or ESP.Distances then
-        tagPosition, tagVisible = WorldToViewportPoint(cam, locs.TagPos.p)
+    local namePosition, nameVisible
+    if ESP.Names then
+        local head = self.Head
+        if not head or not head.Parent then
+            head = self.Object:IsA("Model") and self.Object:FindFirstChild("Head")
+            self.Head = head
+        end
+
+        local nameWorldPosition = head and head:IsA("BasePart")
+            and head.Position + Vector3.new(0, head.Size.Y * 0.5 + 0.35, 0)
+            or locs.TagPos.p
+        namePosition, nameVisible = WorldToViewportPoint(cam, nameWorldPosition)
     end
-    if ESP.Names and tagVisible and tagPosition.Z > 0 then
+    if ESP.Names and nameVisible and namePosition.Z > 0 then
         self.Components.Name.Visible = true
-        self.Components.Name.Position = Vector2.new(tagPosition.X, tagPosition.Y)
+        self.Components.Name.Position = Vector2.new(namePosition.X, namePosition.Y - 16)
         self.Components.Name.Text = self.Name
         self.Components.Name.Color = color
     else
         self.Components.Name.Visible = false
     end
 
-    if ESP.Distances and tagVisible and tagPosition.Z > 0 then
+    local lowerPosition, lowerVisible
+    if ESP.Distances or ESP.Tools then
+        lowerPosition, lowerVisible = WorldToViewportPoint(cam, locs.ToolPos.p)
+    end
+    if ESP.Distances and lowerVisible and lowerPosition.Z > 0 then
         self.Components.Distance.Visible = true
-        self.Components.Distance.Position = Vector2.new(tagPosition.X, tagPosition.Y + (ESP.Names and 14 or 0))
-        self.Components.Distance.Text = math.floor((cam.CFrame.p - cf.p).magnitude) .. "m away"
+        self.Components.Distance.Position = Vector2.new(lowerPosition.X, lowerPosition.Y + 4)
+        self.Components.Distance.Text = ("[%d] studs"):format(math.floor((cam.CFrame.p - cf.p).magnitude + 0.5))
         self.Components.Distance.Color = color
     else
         self.Components.Distance.Visible = false
@@ -481,7 +494,7 @@ function boxBase:Update()
         if not healthValue then
             healthValue = Draw("Text", {
                 Center = true,
-                Color = healthColor,
+                Color = ESP.Color,
                 Outline = true,
                 Size = 16,
                 Visible = false,
@@ -491,8 +504,8 @@ function boxBase:Update()
 
         if bottomVisible and bottomLeft.Z > 0 then
             healthValue.Position = Vector2.new(bottomLeft.X - 20, bottomLeft.Y + 2)
-            healthValue.Text = math.floor(humanoid.Health + 0.5) .. " HP"
-            healthValue.Color = healthColor
+            healthValue.Text = tostring(math.floor(humanoid.Health + 0.5))
+            healthValue.Color = ESP.Color
             healthValue.Visible = true
         end
     end
@@ -512,9 +525,8 @@ function boxBase:Update()
             self.Components.Tool = toolLabel
         end
 
-        local toolPosition, toolVisible = WorldToViewportPoint(cam, locs.ToolPos.p)
-        if toolVisible and toolPosition.Z > 0 then
-            toolLabel.Position = Vector2.new(toolPosition.X, toolPosition.Y + 16)
+        if lowerVisible and lowerPosition.Z > 0 then
+            toolLabel.Position = Vector2.new(lowerPosition.X, lowerPosition.Y + (ESP.Distances and 22 or 4))
             toolLabel.Text = self.ToolName
             toolLabel.Color = color
             toolLabel.Visible = true
@@ -604,6 +616,7 @@ function ESP:Add(obj, options)
         PrimaryPart = options.PrimaryPart or obj.ClassName == "Model" and (obj.PrimaryPart or obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")) or obj:IsA("BasePart") and obj,
         Components = {},
         Connections = {},
+        Head = obj:IsA("Model") and obj:FindFirstChild("Head") or nil,
         Humanoid = obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") or nil,
         IsEnabled = options.IsEnabled,
         SkeletonParts = {},
