@@ -150,16 +150,16 @@ local function createLoaderContent(parent)
     title.Parent = group
 
     local titleStroke = Instance.new("UIStroke")
-    titleStroke.Color = Color3.fromRGB(212, 117, 151)
+    titleStroke.Color = Color3.fromRGB(70, 157, 101)
     titleStroke.Thickness = 1.5
     titleStroke.Transparency = 0.12
     titleStroke.Parent = title
 
     local titleGradient = Instance.new("UIGradient")
     titleGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 197, 216)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 234, 240)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 210, 190)),
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(115, 214, 143)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(232, 255, 237)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(87, 180, 116)),
     })
     titleGradient.Rotation = 0
     titleGradient.Parent = title
@@ -184,7 +184,7 @@ local function createLoaderContent(parent)
 
     local progressFill = Instance.new("Frame")
     progressFill.Name = "ProgressFill"
-    progressFill.BackgroundColor3 = Color3.fromRGB(232, 151, 177)
+    progressFill.BackgroundColor3 = Color3.fromRGB(112, 211, 141)
     progressFill.BackgroundTransparency = 1
     progressFill.BorderSizePixel = 0
     progressFill.Size = UDim2.fromScale(0, 1)
