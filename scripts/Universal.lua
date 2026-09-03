@@ -37,6 +37,7 @@ local Lighting         = game:GetService("Lighting")
 local RunService       = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Stats            = game:GetService("Stats")
+local Workspace        = game:GetService("Workspace")
 local LocalPlayer      = Players.LocalPlayer or Players.PlayerAdded:Wait()
 
 local GameName = "Roblox"
@@ -100,10 +101,15 @@ local LocalState = {
     JumpPower = 75,
     InfiniteJump = false,
     Noclip = false,
+    Fly = false,
+    FlySpeed = 50,
+    GravityEnabled = false,
+    Gravity = Workspace.Gravity,
 }
 
 local humanoidDefaults = setmetatable({}, { __mode = "k" })
 local collisionDefaults = setmetatable({}, { __mode = "k" })
+local gravityDefault = Workspace.Gravity
 
 local function getHumanoid()
     local character = LocalPlayer.Character
@@ -119,6 +125,8 @@ local function rememberHumanoid(humanoid)
         WalkSpeed = humanoid.WalkSpeed,
         JumpPower = humanoid.JumpPower,
         JumpHeight = humanoid.JumpHeight,
+        AutoRotate = humanoid.AutoRotate,
+        PlatformStand = humanoid.PlatformStand,
     }
     pcall(function()
         defaults.UseJumpPower = humanoid.UseJumpPower
@@ -159,6 +167,89 @@ local function restoreCollisions()
     end
 end
 
+local function stopFly()
+    local character = LocalPlayer.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+
+    if root then
+        local velocity = root:FindFirstChild("AustinaFlyVelocity")
+        local gyro = root:FindFirstChild("AustinaFlyGyro")
+        if velocity then velocity:Destroy() end
+        if gyro then gyro:Destroy() end
+    end
+
+    local defaults = humanoid and humanoidDefaults[humanoid]
+    if humanoid and defaults then
+        humanoid.AutoRotate = defaults.AutoRotate
+        humanoid.PlatformStand = defaults.PlatformStand
+    end
+end
+
+local function updateFly(character, humanoid)
+    local root = character:FindFirstChild("HumanoidRootPart")
+    local camera = Workspace.CurrentCamera
+    if not root or not camera then
+        return
+    end
+
+    local velocity = root:FindFirstChild("AustinaFlyVelocity")
+    if not velocity then
+        velocity = Instance.new("BodyVelocity")
+        velocity.Name = "AustinaFlyVelocity"
+        velocity.MaxForce = Vector3.new(1000000, 1000000, 1000000)
+        velocity.P = 1250
+        velocity.Parent = root
+    end
+
+    local gyro = root:FindFirstChild("AustinaFlyGyro")
+    if not gyro then
+        gyro = Instance.new("BodyGyro")
+        gyro.Name = "AustinaFlyGyro"
+        gyro.MaxTorque = Vector3.new(1000000, 1000000, 1000000)
+        gyro.P = 3000
+        gyro.D = 100
+        gyro.Parent = root
+    end
+
+    humanoid.AutoRotate = false
+    humanoid.PlatformStand = true
+
+    local look = camera.CFrame.LookVector
+    local right = camera.CFrame.RightVector
+    local flatLook = Vector3.new(look.X, 0, look.Z)
+    local flatRight = Vector3.new(right.X, 0, right.Z)
+    local keyboardDirection = Vector3.new()
+
+    if flatLook.Magnitude > 0.001 and flatRight.Magnitude > 0.001 then
+        flatLook = flatLook.Unit
+        flatRight = flatRight.Unit
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then keyboardDirection = keyboardDirection + flatLook end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then keyboardDirection = keyboardDirection - flatLook end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then keyboardDirection = keyboardDirection + flatRight end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then keyboardDirection = keyboardDirection - flatRight end
+    end
+
+    local moveDirection = keyboardDirection.Magnitude > 0.001
+        and keyboardDirection.Unit
+        or humanoid.MoveDirection
+    local vertical = 0
+    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+        vertical = vertical + 1
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl)
+        or UserInputService:IsKeyDown(Enum.KeyCode.Q) then
+        vertical = vertical - 1
+    end
+
+    velocity.Velocity = moveDirection * LocalState.FlySpeed
+        + Vector3.new(0, vertical * LocalState.FlySpeed, 0)
+
+    if flatLook.Magnitude > 0.001 then
+        gyro.CFrame = CFrame.new(root.Position, root.Position + flatLook.Unit)
+    end
+end
+
 local movementConnection = RunService.Stepped:Connect(function()
     local character = LocalPlayer.Character
     local humanoid = character and character:FindFirstChildOfClass("Humanoid")
@@ -174,6 +265,13 @@ local movementConnection = RunService.Stepped:Connect(function()
             end)
             humanoid.JumpPower = LocalState.JumpPower
         end
+        if LocalState.Fly then
+            updateFly(character, humanoid)
+        end
+    end
+
+    if LocalState.GravityEnabled then
+        Workspace.Gravity = LocalState.Gravity
     end
 
     if LocalState.Noclip and character then
@@ -246,6 +344,47 @@ Movement.CreateSlider({
     Default = 75,
 }, function(value)
     LocalState.JumpPower = math.floor(value + 0.5)
+end)
+
+Movement.CreateToggle({
+    Title   = "Gravity Override",
+    Desc    = "Keep a custom world gravity on this client",
+    Default = false,
+}, function(state)
+    LocalState.GravityEnabled = state
+    if not state then
+        Workspace.Gravity = gravityDefault
+    end
+end)
+
+Movement.CreateSlider({
+    Title   = "Gravity",
+    Min     = 0,
+    Max     = 500,
+    Default = math.clamp(gravityDefault, 0, 500),
+    Precise = true,
+}, function(value)
+    LocalState.Gravity = value
+end)
+
+Movement.CreateToggle({
+    Title   = "Fly",
+    Desc    = "Move normally; Space rises and Ctrl or Q descends",
+    Default = false,
+}, function(state)
+    LocalState.Fly = state
+    if not state then
+        stopFly()
+    end
+end)
+
+Movement.CreateSlider({
+    Title   = "Fly Speed",
+    Min     = 10,
+    Max     = 250,
+    Default = 50,
+}, function(value)
+    LocalState.FlySpeed = value
 end)
 
 local Character = LocalPlayerPage.CreateSection("Character")
@@ -377,25 +516,86 @@ local worldDefaults = {
     Ambient = Lighting.Ambient,
     Brightness = Lighting.Brightness,
     ClockTime = Lighting.ClockTime,
+    EnvironmentDiffuseScale = Lighting.EnvironmentDiffuseScale,
+    EnvironmentSpecularScale = Lighting.EnvironmentSpecularScale,
+    FogColor = Lighting.FogColor,
     FogEnd = Lighting.FogEnd,
     FogStart = Lighting.FogStart,
     GlobalShadows = Lighting.GlobalShadows,
     OutdoorAmbient = Lighting.OutdoorAmbient,
+    ShadowSoftness = Lighting.ShadowSoftness,
 }
+
+pcall(function()
+    worldDefaults.Technology = Lighting.Technology
+end)
 
 local atmosphereDefaults = setmetatable({}, { __mode = "k" })
 local WorldState = {
+    AdjustLighting = false,
+    Ambient = worldDefaults.Ambient,
     Brightness = math.clamp(worldDefaults.Brightness, 0, 10),
-    BrightnessEnabled = false,
     ClockTime = worldDefaults.ClockTime,
-    ClockTimeEnabled = false,
     CustomFog = false,
+    EnvironmentDiffuseScale = worldDefaults.EnvironmentDiffuseScale,
+    EnvironmentSpecularScale = worldDefaults.EnvironmentSpecularScale,
+    FogColor = worldDefaults.FogColor,
     FogEnd = math.clamp(worldDefaults.FogEnd, 0, 100000),
     FogStart = math.clamp(worldDefaults.FogStart, 0, 10000),
     Fullbright = false,
+    OutdoorAmbient = worldDefaults.OutdoorAmbient,
     RemoveFog = false,
     Running = true,
+    ShadowSoftness = worldDefaults.ShadowSoftness,
+    Technology = worldDefaults.Technology,
 }
+
+local function colorToHex(color)
+    return string.format(
+        "%02X%02X%02X",
+        math.floor(color.R * 255 + 0.5),
+        math.floor(color.G * 255 + 0.5),
+        math.floor(color.B * 255 + 0.5)
+    )
+end
+
+local function parseHexColor(text)
+    local hex = tostring(text):gsub("#", ""):gsub("%s", "")
+    if #hex ~= 6 or not hex:match("^[%x]+$") then
+        return nil
+    end
+
+    return Color3.fromRGB(
+        tonumber(hex:sub(1, 2), 16),
+        tonumber(hex:sub(3, 4), 16),
+        tonumber(hex:sub(5, 6), 16)
+    )
+end
+
+local function technologyName(technology)
+    return tostring(technology):match("([%w_]+)$") or "Unknown"
+end
+
+local technologyNames = {}
+for _, technology in ipairs(Enum.Technology:GetEnumItems()) do
+    table.insert(technologyNames, technology.Name)
+end
+
+local function setTechnology(name)
+    local technology = Enum.Technology[name]
+    if not technology then
+        return false
+    end
+
+    WorldState.Technology = technology
+    if not WorldState.AdjustLighting then
+        return true
+    end
+
+    return pcall(function()
+        Lighting.Technology = technology
+    end)
+end
 
 local function rememberAtmosphere(atmosphere)
     if atmosphereDefaults[atmosphere] then
@@ -421,29 +621,39 @@ local function restoreWorldVisuals()
     Lighting.Ambient = worldDefaults.Ambient
     Lighting.Brightness = worldDefaults.Brightness
     Lighting.ClockTime = worldDefaults.ClockTime
+    Lighting.EnvironmentDiffuseScale = worldDefaults.EnvironmentDiffuseScale
+    Lighting.EnvironmentSpecularScale = worldDefaults.EnvironmentSpecularScale
+    Lighting.FogColor = worldDefaults.FogColor
     Lighting.FogEnd = worldDefaults.FogEnd
     Lighting.FogStart = worldDefaults.FogStart
     Lighting.GlobalShadows = worldDefaults.GlobalShadows
     Lighting.OutdoorAmbient = worldDefaults.OutdoorAmbient
+    Lighting.ShadowSoftness = worldDefaults.ShadowSoftness
+    if worldDefaults.Technology then
+        pcall(function()
+            Lighting.Technology = worldDefaults.Technology
+        end)
+    end
     restoreAtmospheres()
 end
 
 local function applyWorldVisuals()
+    if WorldState.AdjustLighting then
+        Lighting.Ambient = WorldState.Ambient
+        Lighting.Brightness = WorldState.Brightness
+        Lighting.ClockTime = WorldState.ClockTime
+        Lighting.EnvironmentDiffuseScale = WorldState.EnvironmentDiffuseScale
+        Lighting.EnvironmentSpecularScale = WorldState.EnvironmentSpecularScale
+        Lighting.FogColor = WorldState.FogColor
+        Lighting.OutdoorAmbient = WorldState.OutdoorAmbient
+        Lighting.ShadowSoftness = WorldState.ShadowSoftness
+    end
+
     if WorldState.Fullbright then
         Lighting.Ambient = Color3.fromRGB(255, 255, 255)
         Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
         Lighting.GlobalShadows = false
-        if not WorldState.BrightnessEnabled then
-            Lighting.Brightness = 3
-        end
-    end
-
-    if WorldState.BrightnessEnabled then
-        Lighting.Brightness = WorldState.Brightness
-    end
-
-    if WorldState.ClockTimeEnabled then
-        Lighting.ClockTime = WorldState.ClockTime
+        Lighting.Brightness = math.max(WorldState.Brightness, 3)
     end
 
     if WorldState.RemoveFog then
@@ -469,29 +679,73 @@ local worldConnection = RunService.RenderStepped:Connect(function()
 end)
 
 WorldVisuals.CreateToggle({
-    Title   = "Fullbright",
-    Desc    = "Lift ambient light and disable shadows",
+    Title   = "Adjust Lighting",
+    Desc    = "Continuously apply the properties below",
     Default = false,
 }, function(state)
-    WorldState.Fullbright = state
-    if not state then
-        Lighting.Ambient = worldDefaults.Ambient
-        Lighting.OutdoorAmbient = worldDefaults.OutdoorAmbient
-        Lighting.GlobalShadows = worldDefaults.GlobalShadows
-        if not WorldState.BrightnessEnabled then
-            Lighting.Brightness = worldDefaults.Brightness
+    WorldState.AdjustLighting = state
+    if state then
+        if not setTechnology(technologyName(WorldState.Technology)) then
+            notify("Lighting", "Technology is locked by this client.")
         end
+        applyWorldVisuals()
+    else
+        restoreWorldVisuals()
     end
 end)
 
-WorldVisuals.CreateToggle({
-    Title   = "Override Brightness",
-    Default = false,
-}, function(state)
-    WorldState.BrightnessEnabled = state
-    if not state and not WorldState.Fullbright then
-        Lighting.Brightness = worldDefaults.Brightness
+WorldVisuals.CreateButton({ Title = "Get Technology" }, function()
+    local current = "Unavailable"
+    pcall(function()
+        current = technologyName(Lighting.Technology)
+    end)
+    notify("Lighting", "Technology: " .. current)
+end)
+
+WorldVisuals.CreateDropdown({
+    Title   = "Technology",
+    List    = technologyNames,
+    Default = worldDefaults.Technology and technologyName(worldDefaults.Technology) or technologyNames[1],
+}, function(value)
+    if not setTechnology(value) and WorldState.AdjustLighting then
+        notify("Lighting", "Technology is locked by this client.")
     end
+end)
+
+WorldVisuals.CreateBox({
+    Title       = "Ambient",
+    Placeholder = "RRGGBB",
+    Default     = colorToHex(WorldState.Ambient),
+}, function(text)
+    local color = parseHexColor(text)
+    if color then
+        WorldState.Ambient = color
+    else
+        notify("Lighting", "Ambient needs a 6-digit hex color.")
+    end
+end)
+
+WorldVisuals.CreateBox({
+    Title       = "Outdoor Ambient",
+    Placeholder = "RRGGBB",
+    Default     = colorToHex(WorldState.OutdoorAmbient),
+}, function(text)
+    local color = parseHexColor(text)
+    if color then
+        WorldState.OutdoorAmbient = color
+    else
+        notify("Lighting", "Outdoor Ambient needs a 6-digit hex color.")
+    end
+end)
+
+WorldVisuals.CreateSlider({
+    Title   = "Clock Time",
+    Min     = 0,
+    Max     = 24,
+    Default = WorldState.ClockTime,
+    Precise = true,
+}, function(value)
+    WorldState.ClockTime = value
 end)
 
 WorldVisuals.CreateSlider({
@@ -504,24 +758,61 @@ WorldVisuals.CreateSlider({
     WorldState.Brightness = value
 end)
 
-WorldVisuals.CreateToggle({
-    Title   = "Override Time",
-    Default = false,
-}, function(state)
-    WorldState.ClockTimeEnabled = state
-    if not state then
-        Lighting.ClockTime = worldDefaults.ClockTime
-    end
+WorldVisuals.CreateSlider({
+    Title   = "Shadow Softness",
+    Min     = 0,
+    Max     = 1,
+    Default = WorldState.ShadowSoftness,
+    Precise = true,
+}, function(value)
+    WorldState.ShadowSoftness = value
 end)
 
 WorldVisuals.CreateSlider({
-    Title   = "Clock Time",
+    Title   = "Diffuse Scale",
     Min     = 0,
-    Max     = 24,
-    Default = worldDefaults.ClockTime,
+    Max     = 1,
+    Default = WorldState.EnvironmentDiffuseScale,
     Precise = true,
 }, function(value)
-    WorldState.ClockTime = value
+    WorldState.EnvironmentDiffuseScale = value
+end)
+
+WorldVisuals.CreateSlider({
+    Title   = "Specular Scale",
+    Min     = 0,
+    Max     = 1,
+    Default = WorldState.EnvironmentSpecularScale,
+    Precise = true,
+}, function(value)
+    WorldState.EnvironmentSpecularScale = value
+end)
+
+WorldVisuals.CreateBox({
+    Title       = "Fog Color",
+    Placeholder = "RRGGBB",
+    Default     = colorToHex(WorldState.FogColor),
+}, function(text)
+    local color = parseHexColor(text)
+    if color then
+        WorldState.FogColor = color
+    else
+        notify("Lighting", "Fog Color needs a 6-digit hex color.")
+    end
+end)
+
+WorldVisuals.CreateToggle({
+    Title   = "Fullbright",
+    Desc    = "Lift ambient light and disable shadows",
+    Default = false,
+}, function(state)
+    WorldState.Fullbright = state
+    if not state then
+        Lighting.Ambient = worldDefaults.Ambient
+        Lighting.OutdoorAmbient = worldDefaults.OutdoorAmbient
+        Lighting.GlobalShadows = worldDefaults.GlobalShadows
+        Lighting.Brightness = worldDefaults.Brightness
+    end
 end)
 
 WorldVisuals.CreateToggle({
@@ -868,9 +1159,13 @@ Interface.CreateButton({ Title = "Unload" }, function()
     LocalState.JumpPowerEnabled = false
     LocalState.InfiniteJump = false
     LocalState.Noclip = false
+    LocalState.Fly = false
+    LocalState.GravityEnabled = false
     restoreWalkSpeed()
     restoreJumpPower()
     restoreCollisions()
+    stopFly()
+    Workspace.Gravity = gravityDefault
     WorldState.Running = false
     restoreWorldVisuals()
 
