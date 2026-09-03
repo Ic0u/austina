@@ -126,68 +126,39 @@ local function createBackdrop(parent)
     return backdrop
 end
 
-local function createLoaderCard(parent)
+local function createLoaderContent(parent)
     local group = Instance.new("CanvasGroup")
-    group.Name = "LoaderCardGroup"
-    group.AnchorPoint = Vector2.new(0.5, 0.5)
+    group.Name = "LoaderContentGroup"
     group.GroupTransparency = 1
-    group.Position = UDim2.fromScale(0.5, 0.5)
-    group.Size = UDim2.fromOffset(300, 115)
+    group.Size = UDim2.fromScale(1, 1)
     group.Parent = parent
-
-    local scale = Instance.new("UIScale")
-    scale.Scale = 0.85
-    scale.Parent = group
-
-    local card = Instance.new("Frame")
-    card.Name = "Card"
-    card.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
-    card.BorderSizePixel = 0
-    card.Size = UDim2.fromScale(1, 1)
-    card.Parent = group
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 4)
-    corner.Parent = card
-
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(40, 40, 45)
-    stroke.Thickness = 1
-    stroke.Parent = card
 
     local title = Instance.new("TextLabel")
     title.Name = "Title"
+    title.AnchorPoint = Vector2.new(0.5, 0.5)
     title.BackgroundTransparency = 1
-    title.Position = UDim2.fromOffset(24, 19)
-    title.Size = UDim2.fromOffset(252, 19)
-    title.Font = Enum.Font.Code
+    title.Position = UDim2.fromScale(0.5, 0.48)
+    title.Size = UDim2.fromOffset(420, 42)
+    title.Font = Enum.Font.GothamMedium
     title.Text = ""
-    title.TextColor3 = Color3.fromRGB(238, 238, 241)
-    title.TextSize = 16
-    title.TextXAlignment = Enum.TextXAlignment.Left
-    title.Parent = card
+    title.TextColor3 = Color3.fromRGB(250, 243, 246)
+    title.TextSize = 28
+    title.TextXAlignment = Enum.TextXAlignment.Center
+    title.Parent = group
 
-    local status = Instance.new("TextLabel")
-    status.Name = "Status"
-    status.BackgroundTransparency = 1
-    status.Position = UDim2.fromOffset(24, 55)
-    status.Size = UDim2.fromOffset(252, 14)
-    status.Font = Enum.Font.Code
-    status.Text = "Initializing..."
-    status.TextColor3 = Color3.fromRGB(158, 158, 166)
-    status.TextSize = 12
-    status.TextTransparency = 1
-    status.TextXAlignment = Enum.TextXAlignment.Left
-    status.Parent = card
+    local titleScale = Instance.new("UIScale")
+    titleScale.Scale = 0.94
+    titleScale.Parent = title
 
     local progressTrack = Instance.new("Frame")
     progressTrack.Name = "ProgressTrack"
-    progressTrack.BackgroundColor3 = Color3.fromRGB(26, 26, 30)
+    progressTrack.AnchorPoint = Vector2.new(0.5, 0.5)
+    progressTrack.BackgroundColor3 = Color3.fromRGB(238, 237, 241)
     progressTrack.BackgroundTransparency = 1
     progressTrack.BorderSizePixel = 0
-    progressTrack.Position = UDim2.fromOffset(24, 82)
-    progressTrack.Size = UDim2.fromOffset(252, 4)
-    progressTrack.Parent = card
+    progressTrack.Position = UDim2.fromScale(0.5, 0.565)
+    progressTrack.Size = UDim2.fromOffset(230, 3)
+    progressTrack.Parent = group
 
     local trackCorner = Instance.new("UICorner")
     trackCorner.CornerRadius = UDim.new(1, 0)
@@ -195,7 +166,7 @@ local function createLoaderCard(parent)
 
     local progressFill = Instance.new("Frame")
     progressFill.Name = "ProgressFill"
-    progressFill.BackgroundColor3 = Color3.fromRGB(226, 226, 231)
+    progressFill.BackgroundColor3 = Color3.fromRGB(232, 151, 177)
     progressFill.BackgroundTransparency = 1
     progressFill.BorderSizePixel = 0
     progressFill.Size = UDim2.fromScale(0, 1)
@@ -205,7 +176,21 @@ local function createLoaderCard(parent)
     fillCorner.CornerRadius = UDim.new(1, 0)
     fillCorner.Parent = progressFill
 
-    return group, scale, title, status, progressTrack, progressFill
+    local status = Instance.new("TextLabel")
+    status.Name = "Status"
+    status.AnchorPoint = Vector2.new(0.5, 0.5)
+    status.BackgroundTransparency = 1
+    status.Position = UDim2.fromScale(0.5, 0.595)
+    status.Size = UDim2.fromOffset(280, 18)
+    status.Font = Enum.Font.Gotham
+    status.Text = "Initializing..."
+    status.TextColor3 = Color3.fromRGB(246, 242, 244)
+    status.TextSize = 12
+    status.TextTransparency = 1
+    status.TextXAlignment = Enum.TextXAlignment.Center
+    status.Parent = group
+
+    return group, titleScale, title, status, progressTrack, progressFill
 end
 
 local function fetchGameRegistry()
@@ -265,18 +250,16 @@ function Loader.Start(onComplete)
     blur.Parent = Lighting
 
     local backdrop = createBackdrop(screenGui)
-    local cardGroup, cardScale, title, status, progressTrack, progressFill = createLoaderCard(screenGui)
+    local contentGroup, titleScale, title, status, progressTrack, progressFill = createLoaderContent(screenGui)
 
     task.spawn(function()
-        local introInfo = TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-        local groupFade = TweenService:Create(cardGroup, introInfo, { GroupTransparency = 0 })
-        local cardPop = TweenService:Create(cardScale, introInfo, { Scale = 1 })
+        local backdropIn = tween(backdrop, 0.4, { GroupTransparency = 0 })
+        tween(blur, 0.4, { Size = 20 })
+        backdropIn.Completed:Wait()
 
-        groupFade:Play()
-        cardPop:Play()
-        tween(backdrop, 0.35, { GroupTransparency = 0 })
-        tween(blur, 0.35, { Size = 20 })
-        groupFade.Completed:Wait()
+        local titleFade = tween(contentGroup, 0.18, { GroupTransparency = 0 })
+        tween(titleScale, 0.32, { Scale = 1 }, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+        titleFade.Completed:Wait()
 
         local letters = { "A", "U", "S", "T", "I", "N", "A" }
         local revealed = {}
@@ -287,9 +270,10 @@ function Loader.Start(onComplete)
         end
 
         local uiFade = TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
-        TweenService:Create(status, uiFade, { TextTransparency = 0 }):Play()
         TweenService:Create(progressTrack, uiFade, { BackgroundTransparency = 0 }):Play()
         TweenService:Create(progressFill, uiFade, { BackgroundTransparency = 0 }):Play()
+        task.wait(0.1)
+        TweenService:Create(status, uiFade, { TextTransparency = 0 }):Play()
         task.wait(0.25)
 
         local function setProgress(message, percent, holdTime)
@@ -307,8 +291,8 @@ function Loader.Start(onComplete)
         setProgress("Initialization complete.", 1, 0.45)
 
         local outro = TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
-        local groupOut = TweenService:Create(cardGroup, outro, { GroupTransparency = 1 })
-        local scaleOut = TweenService:Create(cardScale, outro, { Scale = 0.9 })
+        local groupOut = TweenService:Create(contentGroup, outro, { GroupTransparency = 1 })
+        local scaleOut = TweenService:Create(titleScale, outro, { Scale = 0.94 })
 
         groupOut:Play()
         scaleOut:Play()
