@@ -2,8 +2,7 @@
 -- The attached script is treated as source material only. Its custom UI,
 -- promotional clipboard action, and third-party remote loader are excluded.
 
-local BASE_URL = "https://raw.githubusercontent.com/Ic0u/austina/main/"
-local REMOTE_REVISION = "2026-09-03-full-port-4"
+local MODULE_BASE_URL = "https://raw.githubusercontent.com/Ic0u/austina/2733a91/"
 local SUPPORTED_PLACES = {
     [2753915549] = true,
     [4442272183] = true,
@@ -26,7 +25,7 @@ end
 environment.AustinaBloxFruitsLoaded = true
 
 local function loadRemoteModule(path)
-    local fetched, source = pcall(game.HttpGet, game, BASE_URL .. path .. "?revision=" .. REMOTE_REVISION)
+    local fetched, source = pcall(game.HttpGet, game, MODULE_BASE_URL .. path)
     if not fetched or type(source) ~= "string" or source == "" then
         error("Austina could not download " .. path)
     end
