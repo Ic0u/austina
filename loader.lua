@@ -7,6 +7,7 @@ local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
 local HttpService = game:GetService("HttpService")
+local Workspace = game:GetService("Workspace")
 
 local BASE_URL = "https://raw.githubusercontent.com/Ic0u/austina/main/"
 local GUI_NAME = "AustinaLoaderGui"
@@ -73,6 +74,103 @@ local function destroyExisting()
     end
 end
 
+local function createWhiteVignette(parent)
+    local layer = Instance.new("Frame")
+    layer.Name = "WhiteVignette"
+    layer.BackgroundTransparency = 1
+    layer.BorderSizePixel = 0
+    layer.Size = UDim2.fromScale(1, 1)
+    layer.Parent = parent
+
+    local edges = {}
+    local edgeDefinitions = {
+        { "Top", UDim2.fromScale(1, 0.28), UDim2.fromScale(0, 0), 90 },
+        { "Bottom", UDim2.fromScale(1, 0.28), UDim2.fromScale(0, 0.72), 270 },
+        { "Left", UDim2.fromScale(0.28, 1), UDim2.fromScale(0, 0), 0 },
+        { "Right", UDim2.fromScale(0.28, 1), UDim2.fromScale(0.72, 0), 180 },
+    }
+
+    for _, definition in ipairs(edgeDefinitions) do
+        local edge = Instance.new("Frame")
+        edge.Name = definition[1]
+        edge.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        edge.BackgroundTransparency = 1
+        edge.BorderSizePixel = 0
+        edge.Size = definition[2]
+        edge.Position = definition[3]
+        edge.Parent = layer
+
+        local gradient = Instance.new("UIGradient")
+        gradient.Rotation = definition[4]
+        gradient.Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0),
+            NumberSequenceKeypoint.new(0.62, 0.72),
+            NumberSequenceKeypoint.new(1, 1),
+        })
+        gradient.Parent = edge
+
+        table.insert(edges, edge)
+    end
+
+    return edges
+end
+
+local function tweenVignette(edges, transparency, duration, direction)
+    local firstTween
+    for index, edge in ipairs(edges) do
+        local edgeTween = tween(
+            edge,
+            duration,
+            { BackgroundTransparency = transparency },
+            Enum.EasingStyle.Quint,
+            direction
+        )
+        if index == 1 then
+            firstTween = edgeTween
+        end
+    end
+
+    return firstTween
+end
+
+local function bindResponsiveScale(uiScale)
+    local viewportConnection
+
+    local function updateScale()
+        local camera = Workspace.CurrentCamera
+        if not camera then
+            return
+        end
+
+        local viewport = camera.ViewportSize
+        local scale = math.min(viewport.X / 1280, viewport.Y / 720)
+        uiScale.Scale = math.clamp(scale, 0.72, 1.65)
+    end
+
+    local function bindCamera()
+        if viewportConnection then
+            viewportConnection:Disconnect()
+            viewportConnection = nil
+        end
+
+        local camera = Workspace.CurrentCamera
+        if camera then
+            viewportConnection = camera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
+        end
+        updateScale()
+    end
+
+    local cameraConnection = Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(bindCamera)
+    bindCamera()
+
+    return function()
+        cameraConnection:Disconnect()
+        if viewportConnection then
+            viewportConnection:Disconnect()
+        end
+    end
+end
+
 local function createLoaderContent(parent)
     local group = Instance.new("CanvasGroup")
     group.Name = "LoaderContentGroup"
@@ -81,13 +179,25 @@ local function createLoaderContent(parent)
     group.Size = UDim2.fromScale(1, 1)
     group.Parent = parent
 
+    local container = Instance.new("Frame")
+    container.Name = "CenteredContent"
+    container.AnchorPoint = Vector2.new(0.5, 0.5)
+    container.BackgroundTransparency = 1
+    container.Position = UDim2.fromScale(0.5, 0.5)
+    container.Size = UDim2.fromOffset(420, 180)
+    container.Parent = group
+
+    local responsiveScale = Instance.new("UIScale")
+    responsiveScale.Scale = 1
+    responsiveScale.Parent = container
+
     local title = Instance.new("Frame")
     title.Name = "Title"
     title.AnchorPoint = Vector2.new(0.5, 0.5)
     title.BackgroundTransparency = 1
-    title.Position = UDim2.fromScale(0.5, 0.48)
+    title.Position = UDim2.fromScale(0.5, 0.3)
     title.Size = UDim2.fromOffset(286, 48)
-    title.Parent = group
+    title.Parent = container
 
     local titleScale = Instance.new("UIScale")
     titleScale.Scale = 1
@@ -155,9 +265,9 @@ local function createLoaderContent(parent)
     progressTrack.BackgroundColor3 = Color3.fromRGB(238, 237, 241)
     progressTrack.BackgroundTransparency = 1
     progressTrack.BorderSizePixel = 0
-    progressTrack.Position = UDim2.fromScale(0.5, 0.565)
+    progressTrack.Position = UDim2.fromScale(0.5, 0.68)
     progressTrack.Size = UDim2.fromOffset(230, 3)
-    progressTrack.Parent = group
+    progressTrack.Parent = container
 
     local trackCorner = Instance.new("UICorner")
     trackCorner.CornerRadius = UDim.new(1, 0)
@@ -179,7 +289,7 @@ local function createLoaderContent(parent)
     status.Name = "Status"
     status.AnchorPoint = Vector2.new(0.5, 0.5)
     status.BackgroundTransparency = 1
-    status.Position = UDim2.fromScale(0.5, 0.595)
+    status.Position = UDim2.fromScale(0.5, 0.83)
     status.Size = UDim2.fromOffset(280, 18)
     status.Font = Enum.Font.PatrickHand
     status.Text = "Initializing..."
@@ -187,9 +297,9 @@ local function createLoaderContent(parent)
     status.TextSize = 16
     status.TextTransparency = 1
     status.TextXAlignment = Enum.TextXAlignment.Center
-    status.Parent = group
+    status.Parent = container
 
-    return group, titleScale, letterViews, status, progressTrack, progressFill
+    return group, responsiveScale, titleScale, letterViews, status, progressTrack, progressFill
 end
 
 local function fetchGameRegistry()
@@ -248,9 +358,13 @@ function Loader.Start(onComplete)
     blur.Size = 0
     blur.Parent = Lighting
 
-    local contentGroup, titleScale, letterViews, status, progressTrack, progressFill = createLoaderContent(screenGui)
+    local vignetteEdges = createWhiteVignette(screenGui)
+    local contentGroup, responsiveScale, titleScale, letterViews, status, progressTrack, progressFill =
+        createLoaderContent(screenGui)
+    local disconnectResponsiveScale = bindResponsiveScale(responsiveScale)
 
     task.spawn(function()
+        tweenVignette(vignetteEdges, 0.78, 0.45, Enum.EasingDirection.Out)
         local blurIn = tween(blur, 0.45, { Size = 20 })
         blurIn.Completed:Wait()
 
@@ -317,9 +431,11 @@ function Loader.Start(onComplete)
 
         groupOut:Play()
         scaleOut:Play()
+        tweenVignette(vignetteEdges, 1, 0.3, Enum.EasingDirection.In)
         tween(blur, 0.3, { Size = 0 }, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
         groupOut.Completed:Wait()
 
+        disconnectResponsiveScale()
         if blur.Parent then
             blur:Destroy()
         end
