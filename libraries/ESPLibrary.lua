@@ -4,6 +4,10 @@ local ESP = {
     Boxes = true,
     BoxShift = CFrame.new(0,-1.5,0),
 	BoxSize = Vector3.new(4,6,0),
+    Chams = false,
+    ChamsAlwaysOnTop = true,
+    ChamsFillTransparency = 0.65,
+    ChamsOutlineTransparency = 0,
     Color = Color3.fromRGB(255, 170, 0),
     Distances = true,
     FaceCamera = false,
@@ -23,13 +27,21 @@ local ESP = {
 }
 
 --Declarations--
-local cam = workspace.CurrentCamera
 local plrs = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 local plr = plrs.LocalPlayer
-local mouse = plr:GetMouse()
+local cam = Workspace.CurrentCamera
+local WorldToViewportPoint = cam and cam.WorldToViewportPoint
+local globalConnections = {}
+local sharedEnvironment = getgenv and getgenv() or _G
+local renderBindName = "AustinaESPRender"
 
-local V3new = Vector3.new
-local WorldToViewportPoint = cam.WorldToViewportPoint
+local previousESP = sharedEnvironment.AustinaESP
+if previousESP and previousESP ~= ESP and previousESP.Destroy then
+    pcall(previousESP.Destroy, previousESP)
+end
+sharedEnvironment.AustinaESP = ESP
 
 local MAX_SKELETON_LINES = 14
 local R6_BONES = {
@@ -65,6 +77,11 @@ local function Draw(obj, props)
 		new[i] = v
 	end
 	return new
+end
+
+local function trackGlobalConnection(connection)
+    table.insert(globalConnections, connection)
+    return connection
 end
 
 function ESP:GetTeam(p)
@@ -104,16 +121,18 @@ function ESP:GetPlrFromChar(char)
 end
 
 function ESP:Toggle(bool)
-    self.Enabled = bool
-    if not bool then
-        for i,v in pairs(self.Objects) do
-            if v.Type == "Box" then --fov circle etc
-                if v.Temporary then
-                    v:Remove()
+    if self.Destroyed then
+        return
+    end
+
+    self.Enabled = bool == true
+    if not self.Enabled then
+        for _, box in pairs(self.Objects) do
+            if box.Type == "Box" then --fov circle etc
+                if box.Temporary then
+                    box:Remove()
                 else
-                    for i,v in pairs(v.Components) do
-                        v.Visible = false
-                    end
+                    box:Hide()
                 end
             end
         end
@@ -125,7 +144,12 @@ function ESP:GetBox(obj)
 end
 
 function ESP:AddObjectListener(parent, options)
+    options = options or {}
+
     local function NewListener(c)
+        if ESP.Destroyed then
+            return
+        end
         if type(options.Type) == "string" and c:IsA(options.Type) or options.Type == nil then
             if type(options.Name) == "string" and c.Name == options.Name or options.Name == nil then
                 if not options.Validator or options.Validator(c) then
@@ -146,35 +170,136 @@ function ESP:AddObjectListener(parent, options)
         end
     end
 
+    local listener
     if options.Recursive then
-        parent.DescendantAdded:Connect(NewListener)
+        listener = trackGlobalConnection(parent.DescendantAdded:Connect(NewListener))
         for i,v in pairs(parent:GetDescendants()) do
             coroutine.wrap(NewListener)(v)
         end
     else
-        parent.ChildAdded:Connect(NewListener)
+        listener = trackGlobalConnection(parent.ChildAdded:Connect(NewListener))
         for i,v in pairs(parent:GetChildren()) do
             coroutine.wrap(NewListener)(v)
         end
     end
+
+    return listener
 end
 
 local boxBase = {}
 boxBase.__index = boxBase
 
+function boxBase:HideDrawings()
+    for _, component in pairs(self.Components) do
+        component.Visible = false
+    end
+end
+
+function boxBase:Hide()
+    self:HideDrawings()
+    if self.Highlight then
+        self.Highlight.Enabled = false
+    end
+end
+
+function boxBase:TrackConnection(connection)
+    table.insert(self.Connections, connection)
+    return connection
+end
+
+function boxBase:RefreshTool()
+    self.ToolName = "None"
+    if not self.Object:IsA("Model") then
+        return
+    end
+
+    for _, child in ipairs(self.Object:GetChildren()) do
+        if child:IsA("Tool") then
+            self.ToolName = child.Name
+            return
+        end
+    end
+end
+
+function boxBase:EnsureToolTracking()
+    if self.ToolTracking or not self.Object:IsA("Model") then
+        return
+    end
+
+    self.ToolTracking = true
+    self:RefreshTool()
+    self:TrackConnection(self.Object.ChildAdded:Connect(function(child)
+        if child:IsA("Tool") then
+            self:RefreshTool()
+        end
+    end))
+    self:TrackConnection(self.Object.ChildRemoved:Connect(function(child)
+        if child:IsA("Tool") then
+            self:RefreshTool()
+        end
+    end))
+end
+
+function boxBase:UpdateHighlight(color)
+    local canHighlight = self.Object:IsA("Model") or self.Object:IsA("BasePart")
+    if not ESP.Chams or not canHighlight then
+        if self.Highlight then
+            self.Highlight.Enabled = false
+        end
+        return
+    end
+
+    if not self.Highlight then
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "AustinaChams"
+        highlight.Adornee = self.Object
+        highlight.Parent = self.Object
+        self.Highlight = highlight
+    end
+
+    self.Highlight.DepthMode = ESP.ChamsAlwaysOnTop
+        and Enum.HighlightDepthMode.AlwaysOnTop
+        or Enum.HighlightDepthMode.Occluded
+    self.Highlight.FillColor = color
+    self.Highlight.FillTransparency = ESP.ChamsFillTransparency
+    self.Highlight.OutlineColor = color
+    self.Highlight.OutlineTransparency = ESP.ChamsOutlineTransparency
+    self.Highlight.Enabled = true
+end
+
 function boxBase:Remove()
+    if self.Removed then
+        return
+    end
+    self.Removed = true
     ESP.Objects[self.Object] = nil
-    for i,v in pairs(self.Components) do
-        v.Visible = false
-        v:Remove()
-        self.Components[i] = nil
+
+    for _, connection in ipairs(self.Connections) do
+        connection:Disconnect()
+    end
+    self.Connections = {}
+
+    for name, component in pairs(self.Components) do
+        component.Visible = false
+        component:Remove()
+        self.Components[name] = nil
+    end
+
+    if self.Highlight then
+        self.Highlight:Destroy()
+        self.Highlight = nil
     end
 end
 
 function boxBase:Update()
+    if self.Removed then
+        return
+    end
     if not self.PrimaryPart then
-        --warn("not supposed to print", self.Object)
         return self:Remove()
+    end
+    if not cam or not WorldToViewportPoint then
+        return self:Hide()
     end
 
     local color
@@ -202,14 +327,27 @@ function boxBase:Update()
     end
 
     if not allow then
-        for i,v in pairs(self.Components) do
-            v.Visible = false
-        end
+        self:Hide()
         return
     end
 
     if ESP.Highlighted == self.Object then
         color = ESP.HighlightColor
+    end
+
+    self:UpdateHighlight(color)
+
+    local hasDrawing = ESP.Boxes
+        or ESP.Distances
+        or ESP.HealthBars
+        or ESP.HealthValues
+        or ESP.Names
+        or ESP.Skeletons
+        or ESP.Tools
+        or ESP.Tracers
+    if not hasDrawing then
+        self:HideDrawings()
+        return
     end
 
     --calculations--
@@ -228,19 +366,31 @@ function boxBase:Update()
         Torso = cf * ESP.BoxShift
     }
 
-    if ESP.Boxes then
-        local TopLeft, Vis1 = WorldToViewportPoint(cam, locs.TopLeft.p)
-        local TopRight, Vis2 = WorldToViewportPoint(cam, locs.TopRight.p)
-        local BottomLeft, Vis3 = WorldToViewportPoint(cam, locs.BottomLeft.p)
-        local BottomRight, Vis4 = WorldToViewportPoint(cam, locs.BottomRight.p)
+    local topLeft, topVisible
+    local topRight, topRightVisible
+    local bottomLeft, bottomVisible
+    local bottomRight, bottomRightVisible
+    if ESP.Boxes or ESP.HealthBars or ESP.HealthValues then
+        topLeft, topVisible = WorldToViewportPoint(cam, locs.TopLeft.p)
+        bottomLeft, bottomVisible = WorldToViewportPoint(cam, locs.BottomLeft.p)
+        if ESP.Boxes then
+            topRight, topRightVisible = WorldToViewportPoint(cam, locs.TopRight.p)
+            bottomRight, bottomRightVisible = WorldToViewportPoint(cam, locs.BottomRight.p)
+        end
+    end
 
+    if ESP.Boxes then
         if self.Components.Quad then
-            if Vis1 or Vis2 or Vis3 or Vis4 then
+            local boundsInFront = topLeft.Z > 0
+                and topRight.Z > 0
+                and bottomLeft.Z > 0
+                and bottomRight.Z > 0
+            if boundsInFront and (topVisible or topRightVisible or bottomVisible or bottomRightVisible) then
                 self.Components.Quad.Visible = true
-                self.Components.Quad.PointA = Vector2.new(TopRight.X, TopRight.Y)
-                self.Components.Quad.PointB = Vector2.new(TopLeft.X, TopLeft.Y)
-                self.Components.Quad.PointC = Vector2.new(BottomLeft.X, BottomLeft.Y)
-                self.Components.Quad.PointD = Vector2.new(BottomRight.X, BottomRight.Y)
+                self.Components.Quad.PointA = Vector2.new(topRight.X, topRight.Y)
+                self.Components.Quad.PointB = Vector2.new(topLeft.X, topLeft.Y)
+                self.Components.Quad.PointC = Vector2.new(bottomLeft.X, bottomLeft.Y)
+                self.Components.Quad.PointD = Vector2.new(bottomRight.X, bottomRight.Y)
                 self.Components.Quad.Color = color
             else
                 self.Components.Quad.Visible = false
@@ -250,7 +400,10 @@ function boxBase:Update()
         self.Components.Quad.Visible = false
     end
 
-    local tagPosition, tagVisible = WorldToViewportPoint(cam, locs.TagPos.p)
+    local tagPosition, tagVisible
+    if ESP.Names or ESP.Distances then
+        tagPosition, tagVisible = WorldToViewportPoint(cam, locs.TagPos.p)
+    end
     if ESP.Names and tagVisible and tagPosition.Z > 0 then
         self.Components.Name.Visible = true
         self.Components.Name.Position = Vector2.new(tagPosition.X, tagPosition.Y)
@@ -269,14 +422,20 @@ function boxBase:Update()
         self.Components.Distance.Visible = false
     end
 
-    local humanoid
-    if (ESP.HealthBars or ESP.HealthValues) and self.Object:IsA("Model") then
-        humanoid = self.Object:FindFirstChildOfClass("Humanoid")
+    local wantsHealth = ESP.HealthBars or ESP.HealthValues
+    local humanoid = wantsHealth and self.Humanoid or nil
+    if wantsHealth and (not humanoid or not humanoid.Parent) then
+        humanoid = self.Object:IsA("Model") and self.Object:FindFirstChildOfClass("Humanoid")
+        self.Humanoid = humanoid
     end
-    local healthRatio = humanoid and humanoid.MaxHealth > 0
-        and math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1)
-        or 0
-    local healthColor = Color3.fromHSV(healthRatio * 0.33, 0.85, 1)
+    local healthRatio
+    local healthColor
+    if humanoid then
+        healthRatio = humanoid.MaxHealth > 0
+            and math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1)
+            or 0
+        healthColor = Color3.fromHSV(healthRatio * 0.33, 0.85, 1)
+    end
 
     local healthBarBackground = self.Components.HealthBarBackground
     local healthBar = self.Components.HealthBar
@@ -303,8 +462,6 @@ function boxBase:Update()
             self.Components.HealthBar = healthBar
         end
 
-        local topLeft, topVisible = WorldToViewportPoint(cam, locs.TopLeft.p)
-        local bottomLeft, bottomVisible = WorldToViewportPoint(cam, locs.BottomLeft.p)
         if topVisible and bottomVisible and topLeft.Z > 0 and bottomLeft.Z > 0 then
             local barBottom = Vector2.new(bottomLeft.X - 7, bottomLeft.Y)
             local barTop = Vector2.new(topLeft.X - 7, topLeft.Y)
@@ -332,7 +489,6 @@ function boxBase:Update()
             self.Components.HealthValue = healthValue
         end
 
-        local bottomLeft, bottomVisible = WorldToViewportPoint(cam, locs.BottomLeft.p)
         if bottomVisible and bottomLeft.Z > 0 then
             healthValue.Position = Vector2.new(bottomLeft.X - 20, bottomLeft.Y + 2)
             healthValue.Text = math.floor(humanoid.Health + 0.5) .. " HP"
@@ -344,6 +500,7 @@ function boxBase:Update()
     local toolLabel = self.Components.Tool
     if toolLabel then toolLabel.Visible = false end
     if ESP.Tools and self.Object:IsA("Model") then
+        self:EnsureToolTracking()
         if not toolLabel then
             toolLabel = Draw("Text", {
                 Center = true,
@@ -355,18 +512,10 @@ function boxBase:Update()
             self.Components.Tool = toolLabel
         end
 
-        local toolName = "None"
-        for _, child in ipairs(self.Object:GetChildren()) do
-            if child:IsA("Tool") then
-                toolName = child.Name
-                break
-            end
-        end
-
         local toolPosition, toolVisible = WorldToViewportPoint(cam, locs.ToolPos.p)
         if toolVisible and toolPosition.Z > 0 then
             toolLabel.Position = Vector2.new(toolPosition.X, toolPosition.Y + 16)
-            toolLabel.Text = toolName
+            toolLabel.Text = self.ToolName
             toolLabel.Color = color
             toolLabel.Visible = true
         end
@@ -375,7 +524,7 @@ function boxBase:Update()
     if ESP.Tracers then
         local TorsoPos, Vis6 = WorldToViewportPoint(cam, locs.Torso.p)
 
-        if Vis6 then
+        if Vis6 and TorsoPos.Z > 0 then
             self.Components.Tracer.Visible = true
             self.Components.Tracer.From = Vector2.new(TorsoPos.X, TorsoPos.Y)
             self.Components.Tracer.To = Vector2.new(cam.ViewportSize.X/2,cam.ViewportSize.Y/ESP.AttachShift)
@@ -396,9 +545,18 @@ function boxBase:Update()
 
     if ESP.Skeletons and self.Object:IsA("Model") then
         local bones = self.Object:FindFirstChild("UpperTorso") and R15_BONES or R6_BONES
+        self.SkeletonParts = self.SkeletonParts or {}
         for index, bone in ipairs(bones) do
-            local fromPart = self.Object:FindFirstChild(bone[1])
-            local toPart = self.Object:FindFirstChild(bone[2])
+            local cachedParts = self.SkeletonParts[index]
+            local fromPart = cachedParts and cachedParts[1]
+            local toPart = cachedParts and cachedParts[2]
+            if not fromPart or not fromPart.Parent or not toPart or not toPart.Parent then
+                fromPart = self.Object:FindFirstChild(bone[1])
+                toPart = self.Object:FindFirstChild(bone[2])
+                if fromPart and toPart then
+                    self.SkeletonParts[index] = { fromPart, toPart }
+                end
+            end
             local componentName = "Skeleton" .. index
             local line = self.Components[componentName]
 
@@ -428,6 +586,10 @@ function boxBase:Update()
 end
 
 function ESP:Add(obj, options)
+    options = options or {}
+    if self.Destroyed then
+        return nil
+    end
     if not obj.Parent and not options.RenderInNil then
         return warn(obj, "has no parent")
     end
@@ -441,8 +603,13 @@ function ESP:Add(obj, options)
         Player = options.Player or plrs:GetPlayerFromCharacter(obj),
         PrimaryPart = options.PrimaryPart or obj.ClassName == "Model" and (obj.PrimaryPart or obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")) or obj:IsA("BasePart") and obj,
         Components = {},
+        Connections = {},
+        Humanoid = obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") or nil,
         IsEnabled = options.IsEnabled,
+        SkeletonParts = {},
         Temporary = options.Temporary,
+        ToolName = "None",
+        ToolTracking = false,
         ColorDynamic = options.ColorDynamic,
         RenderInNil = options.RenderInNil
     }, boxBase)
@@ -451,23 +618,25 @@ function ESP:Add(obj, options)
         self:GetBox(obj):Remove()
     end
 
+    local initialColor = box.Color or self:GetColor(obj) or self.Color
+
     box.Components["Quad"] = Draw("Quad", {
         Thickness = self.Thickness,
-        Color = color,
+        Color = initialColor,
         Transparency = 1,
         Filled = false,
         Visible = self.Enabled and self.Boxes
     })
     box.Components["Name"] = Draw("Text", {
-		Text = box.Name,
-		Color = box.Color,
+			Text = box.Name,
+			Color = initialColor,
 		Center = true,
 		Outline = true,
         Size = 19,
         Visible = self.Enabled and self.Names
 	})
 	box.Components["Distance"] = Draw("Text", {
-		Color = box.Color,
+			Color = initialColor,
 		Center = true,
 		Outline = true,
         Size = 19,
@@ -475,41 +644,44 @@ function ESP:Add(obj, options)
 	})
 
 	box.Components["Tracer"] = Draw("Line", {
-		Thickness = ESP.Thickness,
-		Color = box.Color,
+			Thickness = ESP.Thickness,
+			Color = initialColor,
         Transparency = 1,
         Visible = self.Enabled and self.Tracers
     })
     self.Objects[obj] = box
 
-    obj.AncestryChanged:Connect(function(_, parent)
+    box:TrackConnection(obj.AncestryChanged:Connect(function(_, parent)
         if parent == nil and ESP.AutoRemove ~= false then
             box:Remove()
         end
-    end)
-    obj:GetPropertyChangedSignal("Parent"):Connect(function()
+    end))
+    box:TrackConnection(obj:GetPropertyChangedSignal("Parent"):Connect(function()
         if obj.Parent == nil and ESP.AutoRemove ~= false then
             box:Remove()
         end
-    end)
+    end))
 
-    local hum = obj:FindFirstChildOfClass("Humanoid")
+    local hum = box.Humanoid
 	if hum then
-        hum.Died:Connect(function()
+        box:TrackConnection(hum.Died:Connect(function()
             if ESP.AutoRemove ~= false then
                 box:Remove()
             end
-		end)
+		end))
     end
 
     return box
 end
 
-local function CharAdded(char)
-    local p = plrs:GetPlayerFromCharacter(char)
+local function CharAdded(p, char)
+    if ESP.Destroyed or p == plr then
+        return
+    end
+
     if not char:FindFirstChild("HumanoidRootPart") then
         local ev
-        ev = char.ChildAdded:Connect(function(c)
+        ev = trackGlobalConnection(char.ChildAdded:Connect(function(c)
             if c.Name == "HumanoidRootPart" then
                 ev:Disconnect()
                 ESP:Add(char, {
@@ -518,7 +690,7 @@ local function CharAdded(char)
                     PrimaryPart = c
                 })
             end
-        end)
+        end))
     else
         ESP:Add(char, {
             Name = p.Name,
@@ -528,26 +700,77 @@ local function CharAdded(char)
     end
 end
 local function PlayerAdded(p)
-    p.CharacterAdded:Connect(CharAdded)
+    if ESP.Destroyed or p == plr then
+        return
+    end
+
+    trackGlobalConnection(p.CharacterAdded:Connect(function(char)
+        CharAdded(p, char)
+    end))
     if p.Character then
-        coroutine.wrap(CharAdded)(p.Character)
+        coroutine.wrap(CharAdded)(p, p.Character)
     end
 end
-plrs.PlayerAdded:Connect(PlayerAdded)
-for i,v in pairs(plrs:GetPlayers()) do
-    if v ~= plr then
-        PlayerAdded(v)
+trackGlobalConnection(plrs.PlayerAdded:Connect(PlayerAdded))
+for _, player in pairs(plrs:GetPlayers()) do
+    PlayerAdded(player)
+end
+
+local function renderESP()
+    if ESP.Destroyed then
+        return
+    end
+
+    local currentCamera = Workspace.CurrentCamera
+    if currentCamera ~= cam then
+        cam = currentCamera
+        WorldToViewportPoint = cam and cam.WorldToViewportPoint
+    end
+    if not cam then
+        return
+    end
+
+    for _, object in (ESP.Enabled and pairs or ipairs)(ESP.Objects) do
+        if object.Update then
+            local success, err = pcall(object.Update, object)
+            if not success then
+                local objectName = object.Object and object.Object:GetFullName() or "custom object"
+                warn("[Austina ESP]", err, objectName)
+            end
+        end
     end
 end
 
-game:GetService("RunService").RenderStepped:Connect(function()
-    cam = workspace.CurrentCamera
-    for i,v in (ESP.Enabled and pairs or ipairs)(ESP.Objects) do
-        if v.Update then
-            local s,e = pcall(v.Update, v)
-            if not s then warn("[EU]", e, v.Object:GetFullName()) end
+pcall(RunService.UnbindFromRenderStep, RunService, renderBindName)
+RunService:BindToRenderStep(renderBindName, Enum.RenderPriority.Camera.Value + 1, renderESP)
+
+function ESP:Destroy()
+    if self.Destroyed then
+        return
+    end
+
+    self.Enabled = false
+    self.Destroyed = true
+    RunService:UnbindFromRenderStep(renderBindName)
+
+    local boxes = {}
+    for _, object in pairs(self.Objects) do
+        if type(object) == "table" and object.Type == "Box" and object.Remove then
+            table.insert(boxes, object)
         end
     end
-end)
+    for _, box in ipairs(boxes) do
+        box:Remove()
+    end
+
+    for _, connection in ipairs(globalConnections) do
+        connection:Disconnect()
+    end
+    globalConnections = {}
+
+    if sharedEnvironment.AustinaESP == self then
+        sharedEnvironment.AustinaESP = nil
+    end
+end
 
 return ESP

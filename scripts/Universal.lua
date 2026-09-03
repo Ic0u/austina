@@ -467,6 +467,41 @@ if ESP then
     end)
 
     PlayerESP.CreateToggle({
+        Title   = "Show Chams",
+        Desc    = "Use Roblox Highlight on player characters",
+        Default = false,
+    }, function(state)
+        ESP.Chams = state
+    end)
+
+    PlayerESP.CreateToggle({
+        Title   = "Chams Through Walls",
+        Default = true,
+    }, function(state)
+        ESP.ChamsAlwaysOnTop = state
+    end)
+
+    PlayerESP.CreateSlider({
+        Title   = "Chams Fill Transparency",
+        Min     = 0,
+        Max     = 1,
+        Default = 0.65,
+        Precise = true,
+    }, function(value)
+        ESP.ChamsFillTransparency = value
+    end)
+
+    PlayerESP.CreateSlider({
+        Title   = "Chams Outline Transparency",
+        Min     = 0,
+        Max     = 1,
+        Default = 0,
+        Precise = true,
+    }, function(value)
+        ESP.ChamsOutlineTransparency = value
+    end)
+
+    PlayerESP.CreateToggle({
         Title   = "Boxes Face Camera",
         Desc    = "Keep boxes facing your camera",
         Default = false,
@@ -1201,10 +1236,14 @@ Interface.CreateButton({ Title = "Unload" }, function()
     restoreWorldVisuals()
 
     if ESP then
-        pcall(ESP.Toggle, ESP, false)
-        for _, box in pairs(ESP.Objects) do
-            if box.Remove then
-                pcall(box.Remove, box)
+        if ESP.Destroy then
+            pcall(ESP.Destroy, ESP)
+        else
+            pcall(ESP.Toggle, ESP, false)
+            for _, box in pairs(ESP.Objects) do
+                if box.Remove then
+                    pcall(box.Remove, box)
+                end
             end
         end
     end
