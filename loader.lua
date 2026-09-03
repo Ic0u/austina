@@ -75,7 +75,8 @@ end
 
 local function makeEdge(parent, size, position, rotation)
     local edge = Instance.new("Frame")
-    edge.BackgroundColor3 = Color3.fromRGB(192, 192, 198)
+    edge.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    edge.BackgroundTransparency = 1
     edge.BorderSizePixel = 0
     edge.Position = position
     edge.Size = size
@@ -88,42 +89,44 @@ local function makeEdge(parent, size, position, rotation)
         NumberSequenceKeypoint.new(1, 0.35),
     })
     gradient.Parent = edge
+
+    return edge
 end
 
 local function createBackdrop(parent)
-    local backdrop = Instance.new("CanvasGroup")
+    local backdrop = Instance.new("Frame")
     backdrop.Name = "Backdrop"
-    backdrop.GroupTransparency = 1
+    backdrop.BackgroundTransparency = 1
+    backdrop.BorderSizePixel = 0
     backdrop.Size = UDim2.fromScale(1, 1)
     backdrop.Parent = parent
 
-    local base = Instance.new("Frame")
-    base.Name = "DiffuseVignette"
-    base.BackgroundColor3 = Color3.fromRGB(236, 236, 240)
-    base.BorderSizePixel = 0
-    base.Size = UDim2.fromScale(1, 1)
-    base.Parent = backdrop
+    local edges = {
+        makeEdge(backdrop, UDim2.fromScale(1, 0.24), UDim2.fromScale(0, 0), 90),
+        makeEdge(backdrop, UDim2.fromScale(1, 0.24), UDim2.fromScale(0, 0.76), 270),
+        makeEdge(backdrop, UDim2.fromScale(0.24, 1), UDim2.fromScale(0, 0), 0),
+        makeEdge(backdrop, UDim2.fromScale(0.24, 1), UDim2.fromScale(0.76, 0), 180),
+    }
 
-    -- UIGradient is linear in Roblox. Edge layers complete the radial-vignette illusion.
-    local centerGradient = Instance.new("UIGradient")
-    centerGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(214, 214, 220)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(214, 214, 220)),
-    })
-    centerGradient.Transparency = NumberSequence.new({
-        NumberSequenceKeypoint.new(0, 0.72),
-        NumberSequenceKeypoint.new(0.5, 0.94),
-        NumberSequenceKeypoint.new(1, 0.72),
-    })
-    centerGradient.Parent = base
+    return backdrop, edges
+end
 
-    makeEdge(backdrop, UDim2.fromScale(1, 0.24), UDim2.fromScale(0, 0), 90)
-    makeEdge(backdrop, UDim2.fromScale(1, 0.24), UDim2.fromScale(0, 0.76), 270)
-    makeEdge(backdrop, UDim2.fromScale(0.24, 1), UDim2.fromScale(0, 0), 0)
-    makeEdge(backdrop, UDim2.fromScale(0.24, 1), UDim2.fromScale(0.76, 0), 180)
+local function fadeVignette(edges, transparency, duration, direction)
+    local firstTween
+    for index, edge in ipairs(edges) do
+        local edgeTween = tween(
+            edge,
+            duration,
+            { BackgroundTransparency = transparency },
+            Enum.EasingStyle.Quint,
+            direction
+        )
+        if index == 1 then
+            firstTween = edgeTween
+        end
+    end
 
-    return backdrop
+    return firstTween
 end
 
 local function createLoaderContent(parent)
@@ -249,11 +252,11 @@ function Loader.Start(onComplete)
     blur.Size = 0
     blur.Parent = Lighting
 
-    local backdrop = createBackdrop(screenGui)
+    local _, vignetteEdges = createBackdrop(screenGui)
     local contentGroup, titleScale, title, status, progressTrack, progressFill = createLoaderContent(screenGui)
 
     task.spawn(function()
-        local backdropIn = tween(backdrop, 0.4, { GroupTransparency = 0 })
+        local backdropIn = fadeVignette(vignetteEdges, 0.9, 0.4, Enum.EasingDirection.Out)
         tween(blur, 0.4, { Size = 20 })
         backdropIn.Completed:Wait()
 
@@ -296,7 +299,7 @@ function Loader.Start(onComplete)
 
         groupOut:Play()
         scaleOut:Play()
-        tween(backdrop, 0.3, { GroupTransparency = 1 }, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
+        fadeVignette(vignetteEdges, 1, 0.3, Enum.EasingDirection.In)
         tween(blur, 0.3, { Size = 0 }, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
         groupOut.Completed:Wait()
 
