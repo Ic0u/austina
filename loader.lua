@@ -142,12 +142,27 @@ local function createLoaderContent(parent)
     title.BackgroundTransparency = 1
     title.Position = UDim2.fromScale(0.5, 0.48)
     title.Size = UDim2.fromOffset(420, 42)
-    title.Font = Enum.Font.GothamMedium
+    title.Font = Enum.Font.FredokaOne
     title.Text = ""
-    title.TextColor3 = Color3.fromRGB(250, 243, 246)
-    title.TextSize = 28
+    title.TextColor3 = Color3.fromRGB(255, 235, 242)
+    title.TextSize = 32
     title.TextXAlignment = Enum.TextXAlignment.Center
     title.Parent = group
+
+    local titleStroke = Instance.new("UIStroke")
+    titleStroke.Color = Color3.fromRGB(212, 117, 151)
+    titleStroke.Thickness = 1.5
+    titleStroke.Transparency = 0.12
+    titleStroke.Parent = title
+
+    local titleGradient = Instance.new("UIGradient")
+    titleGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 197, 216)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 234, 240)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 210, 190)),
+    })
+    titleGradient.Rotation = 0
+    titleGradient.Parent = title
 
     local titleScale = Instance.new("UIScale")
     titleScale.Scale = 0.94
@@ -185,10 +200,10 @@ local function createLoaderContent(parent)
     status.BackgroundTransparency = 1
     status.Position = UDim2.fromScale(0.5, 0.595)
     status.Size = UDim2.fromOffset(280, 18)
-    status.Font = Enum.Font.Gotham
+    status.Font = Enum.Font.PatrickHand
     status.Text = "Initializing..."
     status.TextColor3 = Color3.fromRGB(246, 242, 244)
-    status.TextSize = 12
+    status.TextSize = 16
     status.TextTransparency = 1
     status.TextXAlignment = Enum.TextXAlignment.Center
     status.Parent = group
