@@ -439,10 +439,17 @@ if ESP then
     end)
 
     PlayerESP.CreateToggle({
-        Title   = "Show Names & Distance",
+        Title   = "Show Names",
         Default = true,
     }, function(state)
         ESP.Names = state
+    end)
+
+    PlayerESP.CreateToggle({
+        Title   = "Show Distance",
+        Default = true,
+    }, function(state)
+        ESP.Distances = state
     end)
 
     PlayerESP.CreateToggle({
@@ -480,6 +487,30 @@ if ESP then
         Default = false,
     }, function(state)
         ESP.Skeletons = state
+    end)
+
+    PlayerESP.CreateToggle({
+        Title   = "Show Health Bar",
+        Desc    = "Draw health vertically beside the player",
+        Default = false,
+    }, function(state)
+        ESP.HealthBars = state
+    end)
+
+    PlayerESP.CreateToggle({
+        Title   = "Show Health Value",
+        Desc    = "Show exact HP at the lower-left side",
+        Default = false,
+    }, function(state)
+        ESP.HealthValues = state
+    end)
+
+    PlayerESP.CreateToggle({
+        Title   = "Show Equipped Tool",
+        Desc    = "Show the tool below the feet, or None",
+        Default = false,
+    }, function(state)
+        ESP.Tools = state
     end)
 
     PlayerESP.CreateSlider({

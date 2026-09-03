@@ -5,13 +5,17 @@ local ESP = {
     BoxShift = CFrame.new(0,-1.5,0),
 	BoxSize = Vector3.new(4,6,0),
     Color = Color3.fromRGB(255, 170, 0),
+    Distances = true,
     FaceCamera = false,
+    HealthBars = false,
+    HealthValues = false,
     Names = true,
     Skeletons = false,
     TeamColor = true,
     Thickness = 2,
     AttachShift = 1,
     TeamMates = true,
+    Tools = false,
     Players = true,
 
     Objects = setmetatable({}, {__mode="kv"}),
@@ -220,6 +224,7 @@ function boxBase:Update()
         BottomLeft = cf * ESP.BoxShift * CFrame.new(size.X/2,-size.Y/2,0),
         BottomRight = cf * ESP.BoxShift * CFrame.new(-size.X/2,-size.Y/2,0),
         TagPos = cf * ESP.BoxShift * CFrame.new(0,size.Y/2,0),
+        ToolPos = cf * ESP.BoxShift * CFrame.new(0,-size.Y/2,0),
         Torso = cf * ESP.BoxShift
     }
 
@@ -245,26 +250,126 @@ function boxBase:Update()
         self.Components.Quad.Visible = false
     end
 
-    if ESP.Names then
-        local TagPos, Vis5 = WorldToViewportPoint(cam, locs.TagPos.p)
-
-        if Vis5 then
-            self.Components.Name.Visible = true
-            self.Components.Name.Position = Vector2.new(TagPos.X, TagPos.Y)
-            self.Components.Name.Text = self.Name
-            self.Components.Name.Color = color
-
-            self.Components.Distance.Visible = true
-            self.Components.Distance.Position = Vector2.new(TagPos.X, TagPos.Y + 14)
-            self.Components.Distance.Text = math.floor((cam.CFrame.p - cf.p).magnitude) .."m away"
-            self.Components.Distance.Color = color
-        else
-            self.Components.Name.Visible = false
-            self.Components.Distance.Visible = false
-        end
+    local tagPosition, tagVisible = WorldToViewportPoint(cam, locs.TagPos.p)
+    if ESP.Names and tagVisible and tagPosition.Z > 0 then
+        self.Components.Name.Visible = true
+        self.Components.Name.Position = Vector2.new(tagPosition.X, tagPosition.Y)
+        self.Components.Name.Text = self.Name
+        self.Components.Name.Color = color
     else
         self.Components.Name.Visible = false
+    end
+
+    if ESP.Distances and tagVisible and tagPosition.Z > 0 then
+        self.Components.Distance.Visible = true
+        self.Components.Distance.Position = Vector2.new(tagPosition.X, tagPosition.Y + (ESP.Names and 14 or 0))
+        self.Components.Distance.Text = math.floor((cam.CFrame.p - cf.p).magnitude) .. "m away"
+        self.Components.Distance.Color = color
+    else
         self.Components.Distance.Visible = false
+    end
+
+    local humanoid
+    if (ESP.HealthBars or ESP.HealthValues) and self.Object:IsA("Model") then
+        humanoid = self.Object:FindFirstChildOfClass("Humanoid")
+    end
+    local healthRatio = humanoid and humanoid.MaxHealth > 0
+        and math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1)
+        or 0
+    local healthColor = Color3.fromHSV(healthRatio * 0.33, 0.85, 1)
+
+    local healthBarBackground = self.Components.HealthBarBackground
+    local healthBar = self.Components.HealthBar
+    if healthBarBackground then healthBarBackground.Visible = false end
+    if healthBar then healthBar.Visible = false end
+
+    if ESP.HealthBars and humanoid then
+        if not healthBarBackground then
+            healthBarBackground = Draw("Line", {
+                Color = Color3.fromRGB(15, 15, 18),
+                Thickness = math.max(ESP.Thickness + 4, 5),
+                Transparency = 0.8,
+                Visible = false,
+            })
+            self.Components.HealthBarBackground = healthBarBackground
+        end
+        if not healthBar then
+            healthBar = Draw("Line", {
+                Color = healthColor,
+                Thickness = math.max(ESP.Thickness + 1, 3),
+                Transparency = 1,
+                Visible = false,
+            })
+            self.Components.HealthBar = healthBar
+        end
+
+        local topLeft, topVisible = WorldToViewportPoint(cam, locs.TopLeft.p)
+        local bottomLeft, bottomVisible = WorldToViewportPoint(cam, locs.BottomLeft.p)
+        if topVisible and bottomVisible and topLeft.Z > 0 and bottomLeft.Z > 0 then
+            local barBottom = Vector2.new(bottomLeft.X - 7, bottomLeft.Y)
+            local barTop = Vector2.new(topLeft.X - 7, topLeft.Y)
+            healthBarBackground.From = barBottom
+            healthBarBackground.To = barTop
+            healthBarBackground.Visible = true
+            healthBar.From = barBottom
+            healthBar.To = barBottom:Lerp(barTop, healthRatio)
+            healthBar.Color = healthColor
+            healthBar.Visible = true
+        end
+    end
+
+    local healthValue = self.Components.HealthValue
+    if healthValue then healthValue.Visible = false end
+    if ESP.HealthValues and humanoid then
+        if not healthValue then
+            healthValue = Draw("Text", {
+                Center = true,
+                Color = healthColor,
+                Outline = true,
+                Size = 16,
+                Visible = false,
+            })
+            self.Components.HealthValue = healthValue
+        end
+
+        local bottomLeft, bottomVisible = WorldToViewportPoint(cam, locs.BottomLeft.p)
+        if bottomVisible and bottomLeft.Z > 0 then
+            healthValue.Position = Vector2.new(bottomLeft.X - 20, bottomLeft.Y + 2)
+            healthValue.Text = math.floor(humanoid.Health + 0.5) .. " HP"
+            healthValue.Color = healthColor
+            healthValue.Visible = true
+        end
+    end
+
+    local toolLabel = self.Components.Tool
+    if toolLabel then toolLabel.Visible = false end
+    if ESP.Tools and self.Object:IsA("Model") then
+        if not toolLabel then
+            toolLabel = Draw("Text", {
+                Center = true,
+                Color = color,
+                Outline = true,
+                Size = 17,
+                Visible = false,
+            })
+            self.Components.Tool = toolLabel
+        end
+
+        local toolName = "None"
+        for _, child in ipairs(self.Object:GetChildren()) do
+            if child:IsA("Tool") then
+                toolName = child.Name
+                break
+            end
+        end
+
+        local toolPosition, toolVisible = WorldToViewportPoint(cam, locs.ToolPos.p)
+        if toolVisible and toolPosition.Z > 0 then
+            toolLabel.Position = Vector2.new(toolPosition.X, toolPosition.Y + 16)
+            toolLabel.Text = toolName
+            toolLabel.Color = color
+            toolLabel.Visible = true
+        end
     end
 
     if ESP.Tracers then
@@ -366,7 +471,7 @@ function ESP:Add(obj, options)
 		Center = true,
 		Outline = true,
         Size = 19,
-        Visible = self.Enabled and self.Names
+		Visible = self.Enabled and self.Distances
 	})
 
 	box.Components["Tracer"] = Draw("Line", {
