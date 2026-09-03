@@ -1,20 +1,21 @@
-<div align="center">
+# Austina
 
-# austina
+Roblox script loader with a cinematic initialization sequence and a callback-based module API.
 
-** newly rebranded script hub, merging and updating the legacy CW-Vietcombank scripts.**
-
-[![Version](https://img.shields.io/badge/version-1.0.0-1ab273?style=flat-square)](https://github.com/Ic0u/levishub)
-![Lua](https://img.shields.io/badge/Lua-5.1-blue?style=flat-square)
-![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
-
-</div>
-
-
+## Default launch
 
 ```lua
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Ic0u/levishub/main/loader.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Ic0u/austina/main/loader.lua"))().Start()
 ```
 
+## Custom completion callback
 
+```lua
+local Loader = loadstring(game:HttpGet("https://raw.githubusercontent.com/Ic0u/austina/main/loader.lua"))()
 
+Loader.Start(function()
+    -- Launch the main Austina window here.
+end)
+```
+
+When no callback is supplied, `Loader.Start()` loads the matching game script from `games.json`, or falls back to `scripts/Universal.lua`.
