@@ -1,13 +1,42 @@
--- Austin Hub
+-- Austina
 
-local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/Ic0u/achieved-scripts/refs/heads/main/seahub.lua"))()
+local BASE_URL = "https://raw.githubusercontent.com/Ic0u/austina/main/"
+
+local function loadRemoteModule(path)
+    local fetched, source = pcall(game.HttpGet, game, BASE_URL .. path)
+    if not fetched or type(source) ~= "string" or source == "" then
+        return nil, "could not download " .. path
+    end
+
+    local chunk, compileError = loadstring(source)
+    if not chunk then
+        return nil, compileError
+    end
+
+    local executed, module = pcall(chunk)
+    if not executed then
+        return nil, module
+    end
+
+    return module
+end
+
+local UILibrary, uiError = loadRemoteModule("libraries/UILibrary.lua")
+if not UILibrary then
+    error("Austina UI library failed: " .. tostring(uiError))
+end
+
+local ESP, espError = loadRemoteModule("libraries/ESPLibrary.lua")
 
 local Players          = game:GetService("Players")
 local TeleportService  = game:GetService("TeleportService")
 local HttpService      = game:GetService("HttpService")
 local VirtualUser      = game:GetService("VirtualUser")
 local GuiService       = game:GetService("GuiService")
-local LocalPlayer      = Players.LocalPlayer
+local RunService       = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Stats            = game:GetService("Stats")
+local LocalPlayer      = Players.LocalPlayer or Players.PlayerAdded:Wait()
 
 local GameName = "Roblox"
 pcall(function()
@@ -20,12 +49,12 @@ local AccentDeep = Color3.fromRGB(56, 138, 92)
 local MenuKey    = Enum.KeyCode.RightControl
 
 local Window = UILibrary.CreateMain({
-    Name  = "Austin Hub",
-    Title = GameName,
-    Desc  = "",
+    Name  = "Austina",
+    Title = "Universal",
+    Desc  = "Universal",
 })
 
-UILibrary.SetConfigFolder("AustinHub/Configs")
+UILibrary.SetConfigFolder("Austina/Configs")
 
 -- the library already prefixes every notification with the hub name,
 -- so Title here is the subject only
@@ -56,64 +85,269 @@ getgenv().UIColor["Slider Line Color"]     = Color3.fromRGB(60, 60, 60)
 getgenv().UIColor["Toggle Desc Color"]     = Color3.fromRGB(150, 150, 150)
 getgenv().UIColor["Border Color"]          = Color3.fromRGB(40, 40, 40)
 
-local MainPage     = Window.CreatePage({ Page_Name = "Main",     Page_Title = "Main" })
-local PlayerPage   = Window.CreatePage({ Page_Name = "Player",   Page_Title = "Player" })
-local InfoPage     = Window.CreatePage({ Page_Name = "Info",     Page_Title = "Info" })
-local SettingsPage = Window.CreatePage({ Page_Name = "Settings", Page_Title = "Settings" })
+local LocalPlayerPage = Window.CreatePage({ Page_Name = "LocalPlayer", Page_Title = "LocalPlayer" })
+local VisualPage      = Window.CreatePage({ Page_Name = "Visual",      Page_Title = "Visual" })
+local InfoPage        = Window.CreatePage({ Page_Name = "Info",        Page_Title = "Info" })
+local SettingsPage    = Window.CreatePage({ Page_Name = "Settings",    Page_Title = "Settings" })
 
--- Main
+-- LocalPlayer
 
-local General = MainPage.CreateSection("General")
+local LocalState = {
+    WalkSpeedEnabled = false,
+    WalkSpeed = 32,
+    JumpPowerEnabled = false,
+    JumpPower = 75,
+    InfiniteJump = false,
+    Noclip = false,
+}
 
-local Status = General.CreateLabel({ Title = "Status: idle" })
+local humanoidDefaults = setmetatable({}, { __mode = "k" })
+local collisionDefaults = setmetatable({}, { __mode = "k" })
 
-General.CreateToggle({
-    Title      = "Enable",
-    Desc       = "Main feature",
-    Default    = false,
-    Keybind    = true,
-    DefaultKey = Enum.KeyCode.F,
-}, function(state)
-    Status.SetText(state and "Status: running" or "Status: idle")
+local function getHumanoid()
+    local character = LocalPlayer.Character
+    return character and character:FindFirstChildOfClass("Humanoid")
+end
+
+local function rememberHumanoid(humanoid)
+    if not humanoid or humanoidDefaults[humanoid] then
+        return
+    end
+
+    local defaults = {
+        WalkSpeed = humanoid.WalkSpeed,
+        JumpPower = humanoid.JumpPower,
+        JumpHeight = humanoid.JumpHeight,
+    }
+    pcall(function()
+        defaults.UseJumpPower = humanoid.UseJumpPower
+    end)
+    humanoidDefaults[humanoid] = defaults
+end
+
+local function restoreWalkSpeed()
+    local humanoid = getHumanoid()
+    local defaults = humanoid and humanoidDefaults[humanoid]
+    if humanoid and defaults then
+        humanoid.WalkSpeed = defaults.WalkSpeed
+    end
+end
+
+local function restoreJumpPower()
+    local humanoid = getHumanoid()
+    local defaults = humanoid and humanoidDefaults[humanoid]
+    if not humanoid or not defaults then
+        return
+    end
+
+    humanoid.JumpPower = defaults.JumpPower
+    humanoid.JumpHeight = defaults.JumpHeight
+    if defaults.UseJumpPower ~= nil then
+        pcall(function()
+            humanoid.UseJumpPower = defaults.UseJumpPower
+        end)
+    end
+end
+
+local function restoreCollisions()
+    for part, canCollide in pairs(collisionDefaults) do
+        if part and part.Parent then
+            part.CanCollide = canCollide
+        end
+        collisionDefaults[part] = nil
+    end
+end
+
+local movementConnection = RunService.Stepped:Connect(function()
+    local character = LocalPlayer.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+
+    if humanoid then
+        rememberHumanoid(humanoid)
+        if LocalState.WalkSpeedEnabled then
+            humanoid.WalkSpeed = LocalState.WalkSpeed
+        end
+        if LocalState.JumpPowerEnabled then
+            pcall(function()
+                humanoid.UseJumpPower = true
+            end)
+            humanoid.JumpPower = LocalState.JumpPower
+        end
+    end
+
+    if LocalState.Noclip and character then
+        for _, descendant in ipairs(character:GetDescendants()) do
+            if descendant:IsA("BasePart") then
+                if collisionDefaults[descendant] == nil then
+                    collisionDefaults[descendant] = descendant.CanCollide
+                end
+                descendant.CanCollide = false
+            end
+        end
+    end
 end)
 
-General.CreateDropdown({
-    Title   = "Mode",
-    List    = { "Safe", "Balanced", "Fast" },
-    Default = "Balanced",
-}, function(value) end)
+local jumpConnection = UserInputService.JumpRequest:Connect(function()
+    if not LocalState.InfiniteJump then
+        return
+    end
 
-General.CreateSlider({
-    Title   = "Interval",
-    Min     = 0,
-    Max     = 10,
-    Default = 3,
-    Precise = true,
-}, function(value) end)
-
-General.CreateButton({ Title = "Run Once" }, function()
-    notify("Action", "Done.", 3)
+    local humanoid = getHumanoid()
+    if humanoid then
+        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
 end)
 
--- Player
+local characterConnection = LocalPlayer.CharacterAdded:Connect(function(character)
+    local humanoid = character:WaitForChild("Humanoid", 10)
+    if humanoid then
+        rememberHumanoid(humanoid)
+    end
+end)
 
-local Movement = PlayerPage.CreateSection("Movement")
+local Movement = LocalPlayerPage.CreateSection("Movement")
 
 Movement.CreateToggle({
-    Title              = "Walk Speed",
-    Default            = false,
-    Textbox            = true,
-    TextboxDefault     = "16",
-    TextboxPlaceholder = "speed",
-    TextboxCallback    = function(text) end,
-}, function(state) end)
+    Title   = "Walk Speed",
+    Desc    = "Keep a custom movement speed",
+    Default = false,
+}, function(state)
+    LocalState.WalkSpeedEnabled = state
+    if not state then
+        restoreWalkSpeed()
+    end
+end)
 
-Movement.CreateBox({
-    Title       = "Value",
-    Placeholder = "number",
-    Default     = "",
-    Number      = true,
-}, function(text) end)
+Movement.CreateSlider({
+    Title   = "Walk Speed Value",
+    Min     = 16,
+    Max     = 100,
+    Default = 32,
+}, function(value)
+    LocalState.WalkSpeed = math.floor(value + 0.5)
+end)
+
+Movement.CreateToggle({
+    Title   = "Jump Power",
+    Desc    = "Keep a custom jump strength",
+    Default = false,
+}, function(state)
+    LocalState.JumpPowerEnabled = state
+    if not state then
+        restoreJumpPower()
+    end
+end)
+
+Movement.CreateSlider({
+    Title   = "Jump Power Value",
+    Min     = 50,
+    Max     = 150,
+    Default = 75,
+}, function(value)
+    LocalState.JumpPower = math.floor(value + 0.5)
+end)
+
+local Character = LocalPlayerPage.CreateSection("Character")
+
+Character.CreateToggle({
+    Title   = "Infinite Jump",
+    Desc    = "Jump again while airborne",
+    Default = false,
+}, function(state)
+    LocalState.InfiniteJump = state
+end)
+
+Character.CreateToggle({
+    Title   = "Noclip",
+    Desc    = "Disable character collisions",
+    Default = false,
+}, function(state)
+    LocalState.Noclip = state
+    if not state then
+        restoreCollisions()
+    end
+end)
+
+-- Visual
+
+local PlayerESP = VisualPage.CreateSection("Player ESP")
+
+if ESP then
+    ESP.Color = AccentSoft
+    ESP:Toggle(false)
+
+    PlayerESP.CreateToggle({
+        Title   = "Enable ESP",
+        Desc    = "Show selected overlays on players",
+        Default = false,
+    }, function(state)
+        ESP:Toggle(state)
+    end)
+
+    PlayerESP.CreateToggle({
+        Title   = "Boxes",
+        Default = true,
+    }, function(state)
+        ESP.Boxes = state
+    end)
+
+    PlayerESP.CreateToggle({
+        Title   = "Names & Distance",
+        Default = true,
+    }, function(state)
+        ESP.Names = state
+    end)
+
+    PlayerESP.CreateToggle({
+        Title   = "Tracers",
+        Default = false,
+    }, function(state)
+        ESP.Tracers = state
+    end)
+
+    PlayerESP.CreateToggle({
+        Title   = "Team Colors",
+        Default = true,
+    }, function(state)
+        ESP.TeamColor = state
+    end)
+
+    PlayerESP.CreateToggle({
+        Title   = "Show Teammates",
+        Default = true,
+    }, function(state)
+        ESP.TeamMates = state
+    end)
+
+    PlayerESP.CreateToggle({
+        Title   = "Face Camera",
+        Desc    = "Keep boxes facing your camera",
+        Default = false,
+    }, function(state)
+        ESP.FaceCamera = state
+    end)
+
+    PlayerESP.CreateSlider({
+        Title   = "Line Thickness",
+        Min     = 1,
+        Max     = 5,
+        Default = 2,
+    }, function(value)
+        ESP.Thickness = value
+        for _, box in pairs(ESP.Objects) do
+            if box.Components then
+                pcall(function()
+                    box.Components.Quad.Thickness = value
+                    box.Components.Tracer.Thickness = value
+                end)
+            end
+        end
+    end)
+else
+    PlayerESP.CreateLabel({
+        Title = "ESP unavailable: " .. tostring(espError),
+    })
+end
 
 -- Settings
 
@@ -268,6 +502,7 @@ end)
 local Utility = SettingsPage.CreateSection("Utility")
 
 local idleConnection
+local fpsConnection
 
 Utility.CreateToggle({
     Title   = "Anti AFK",
@@ -406,6 +641,28 @@ end)
 
 Interface.CreateButton({ Title = "Unload" }, function()
     if idleConnection then idleConnection:Disconnect() end
+    if movementConnection then movementConnection:Disconnect() end
+    if jumpConnection then jumpConnection:Disconnect() end
+    if characterConnection then characterConnection:Disconnect() end
+    if fpsConnection then fpsConnection:Disconnect() end
+
+    LocalState.WalkSpeedEnabled = false
+    LocalState.JumpPowerEnabled = false
+    LocalState.InfiniteJump = false
+    LocalState.Noclip = false
+    restoreWalkSpeed()
+    restoreJumpPower()
+    restoreCollisions()
+
+    if ESP then
+        pcall(ESP.Toggle, ESP, false)
+        for _, box in pairs(ESP.Objects) do
+            if box.Remove then
+                pcall(box.Remove, box)
+            end
+        end
+    end
+
     ServerState.AutoHop = false
     ServerState.AutoRejoin = false
     if UILibrary.Internal.Gui then UILibrary.Internal.Gui:Destroy() end
@@ -449,20 +706,18 @@ pcall(function()
         or "Unknown"
 end)
 
-About.CreateLabel({ Title = "Austin Hub  v0.1a" })
+About.CreateLabel({ Title = "Austina  v0.1a" })
 About.CreateLabel({ Title = "Game: " .. GameName })
 About.CreateLabel({ Title = "Place Id: " .. tostring(game.PlaceId) })
 About.CreateLabel({ Title = "Executor: " .. tostring(executorName) })
 About.CreateLabel({ Title = "UI Library: SeaUI " .. tostring(UILibrary.VERSION or "?") })
 
 -- live server readout
-local RunService = game:GetService("RunService")
-local Stats      = game:GetService("Stats")
 
 local startedAt = os.time()
 local frames, frameClock, fps = 0, os.clock(), 0
 
-RunService.RenderStepped:Connect(function()
+fpsConnection = RunService.RenderStepped:Connect(function()
     frames = frames + 1
     local now = os.clock()
     if now - frameClock >= 1 then
@@ -509,4 +764,4 @@ task.spawn(function()
     end
 end)
 
-notify("Loaded", GameName, 4)
+notify("Loaded", "Universal", 4)
