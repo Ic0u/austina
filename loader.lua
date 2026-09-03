@@ -73,100 +73,81 @@ local function destroyExisting()
     end
 end
 
-local function makeEdge(parent, size, position, rotation)
-    local edge = Instance.new("Frame")
-    edge.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    edge.BackgroundTransparency = 1
-    edge.BorderSizePixel = 0
-    edge.Position = position
-    edge.Size = size
-    edge.Parent = parent
-
-    local gradient = Instance.new("UIGradient")
-    gradient.Rotation = rotation
-    gradient.Transparency = NumberSequence.new({
-        NumberSequenceKeypoint.new(0, 1),
-        NumberSequenceKeypoint.new(1, 0.35),
-    })
-    gradient.Parent = edge
-
-    return edge
-end
-
-local function createBackdrop(parent)
-    local backdrop = Instance.new("Frame")
-    backdrop.Name = "Backdrop"
-    backdrop.BackgroundTransparency = 1
-    backdrop.BorderSizePixel = 0
-    backdrop.Size = UDim2.fromScale(1, 1)
-    backdrop.Parent = parent
-
-    local edges = {
-        makeEdge(backdrop, UDim2.fromScale(1, 0.24), UDim2.fromScale(0, 0), 90),
-        makeEdge(backdrop, UDim2.fromScale(1, 0.24), UDim2.fromScale(0, 0.76), 270),
-        makeEdge(backdrop, UDim2.fromScale(0.24, 1), UDim2.fromScale(0, 0), 0),
-        makeEdge(backdrop, UDim2.fromScale(0.24, 1), UDim2.fromScale(0.76, 0), 180),
-    }
-
-    return backdrop, edges
-end
-
-local function fadeVignette(edges, transparency, duration, direction)
-    local firstTween
-    for index, edge in ipairs(edges) do
-        local edgeTween = tween(
-            edge,
-            duration,
-            { BackgroundTransparency = transparency },
-            Enum.EasingStyle.Quint,
-            direction
-        )
-        if index == 1 then
-            firstTween = edgeTween
-        end
-    end
-
-    return firstTween
-end
-
 local function createLoaderContent(parent)
     local group = Instance.new("CanvasGroup")
     group.Name = "LoaderContentGroup"
+    group.BackgroundTransparency = 1
     group.GroupTransparency = 1
     group.Size = UDim2.fromScale(1, 1)
     group.Parent = parent
 
-    local title = Instance.new("TextLabel")
+    local title = Instance.new("Frame")
     title.Name = "Title"
     title.AnchorPoint = Vector2.new(0.5, 0.5)
     title.BackgroundTransparency = 1
     title.Position = UDim2.fromScale(0.5, 0.48)
-    title.Size = UDim2.fromOffset(420, 42)
-    title.Font = Enum.Font.FredokaOne
-    title.Text = ""
-    title.TextColor3 = Color3.fromRGB(255, 235, 242)
-    title.TextSize = 32
-    title.TextXAlignment = Enum.TextXAlignment.Center
+    title.Size = UDim2.fromOffset(286, 48)
     title.Parent = group
 
-    local titleStroke = Instance.new("UIStroke")
-    titleStroke.Color = Color3.fromRGB(70, 157, 101)
-    titleStroke.Thickness = 1.5
-    titleStroke.Transparency = 0.12
-    titleStroke.Parent = title
-
-    local titleGradient = Instance.new("UIGradient")
-    titleGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(115, 214, 143)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(232, 255, 237)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(87, 180, 116)),
-    })
-    titleGradient.Rotation = 0
-    titleGradient.Parent = title
-
     local titleScale = Instance.new("UIScale")
-    titleScale.Scale = 0.94
+    titleScale.Scale = 1
     titleScale.Parent = title
+
+    local titleLayout = Instance.new("UIListLayout")
+    titleLayout.FillDirection = Enum.FillDirection.Horizontal
+    titleLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    titleLayout.Padding = UDim.new(0, 7)
+    titleLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    titleLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+    titleLayout.Parent = title
+
+    local letterViews = {}
+    local letterRotations = { -7, 4, -3, 5, -4, 3, -5 }
+    for index, character in ipairs({ "A", "U", "S", "T", "I", "N", "A" }) do
+        local slot = Instance.new("Frame")
+        slot.Name = "LetterSlot" .. index
+        slot.BackgroundTransparency = 1
+        slot.LayoutOrder = index
+        slot.Size = UDim2.fromOffset(32, 48)
+        slot.Parent = title
+
+        local letter = Instance.new("TextLabel")
+        letter.Name = "Letter" .. index
+        letter.BackgroundTransparency = 1
+        letter.Font = Enum.Font.FredokaOne
+        letter.Position = UDim2.fromOffset(0, 18)
+        letter.Rotation = letterRotations[index]
+        letter.Size = UDim2.fromScale(1, 1)
+        letter.Text = character
+        letter.TextColor3 = Color3.fromRGB(230, 255, 237)
+        letter.TextSize = 32
+        letter.TextTransparency = 1
+        letter.Parent = slot
+
+        local letterStroke = Instance.new("UIStroke")
+        letterStroke.Color = Color3.fromRGB(70, 157, 101)
+        letterStroke.Thickness = 1.5
+        letterStroke.Transparency = 0.12
+        letterStroke.Parent = letter
+
+        local letterGradient = Instance.new("UIGradient")
+        letterGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(115, 214, 143)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(232, 255, 237)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(87, 180, 116)),
+        })
+        letterGradient.Rotation = 90
+        letterGradient.Parent = letter
+
+        local letterScale = Instance.new("UIScale")
+        letterScale.Scale = 0.72
+        letterScale.Parent = letter
+
+        table.insert(letterViews, {
+            Label = letter,
+            Scale = letterScale,
+        })
+    end
 
     local progressTrack = Instance.new("Frame")
     progressTrack.Name = "ProgressTrack"
@@ -208,7 +189,7 @@ local function createLoaderContent(parent)
     status.TextXAlignment = Enum.TextXAlignment.Center
     status.Parent = group
 
-    return group, titleScale, title, status, progressTrack, progressFill
+    return group, titleScale, letterViews, status, progressTrack, progressFill
 end
 
 local function fetchGameRegistry()
@@ -267,25 +248,47 @@ function Loader.Start(onComplete)
     blur.Size = 0
     blur.Parent = Lighting
 
-    local _, vignetteEdges = createBackdrop(screenGui)
-    local contentGroup, titleScale, title, status, progressTrack, progressFill = createLoaderContent(screenGui)
+    local contentGroup, titleScale, letterViews, status, progressTrack, progressFill = createLoaderContent(screenGui)
 
     task.spawn(function()
-        local backdropIn = fadeVignette(vignetteEdges, 0.9, 0.4, Enum.EasingDirection.Out)
-        tween(blur, 0.4, { Size = 20 })
-        backdropIn.Completed:Wait()
+        local blurIn = tween(blur, 0.45, { Size = 20 })
+        blurIn.Completed:Wait()
 
-        local titleFade = tween(contentGroup, 0.18, { GroupTransparency = 0 })
-        tween(titleScale, 0.32, { Scale = 1 }, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-        titleFade.Completed:Wait()
+        contentGroup.GroupTransparency = 0
 
-        local letters = { "A", "U", "S", "T", "I", "N", "A" }
-        local revealed = {}
-        for _, letter in ipairs(letters) do
-            table.insert(revealed, letter)
-            title.Text = table.concat(revealed, " ")
-            task.wait(0.045)
+        local lastLetterTween
+        for _, view in ipairs(letterViews) do
+            lastLetterTween = tween(
+                view.Label,
+                0.42,
+                {
+                    Position = UDim2.fromOffset(0, 0),
+                    Rotation = 0,
+                    TextTransparency = 0,
+                },
+                Enum.EasingStyle.Back,
+                Enum.EasingDirection.Out
+            )
+            tween(
+                view.Scale,
+                0.42,
+                { Scale = 1 },
+                Enum.EasingStyle.Back,
+                Enum.EasingDirection.Out
+            )
+            task.wait(0.065)
         end
+
+        if lastLetterTween then
+            lastLetterTween.Completed:Wait()
+        end
+
+        local pulseUp = tween(titleScale, 0.16, { Scale = 1.06 }, Enum.EasingStyle.Sine)
+        pulseUp.Completed:Wait()
+        local pulseDown = tween(titleScale, 0.18, { Scale = 0.985 }, Enum.EasingStyle.Sine)
+        pulseDown.Completed:Wait()
+        local pulseSettle = tween(titleScale, 0.22, { Scale = 1 }, Enum.EasingStyle.Sine)
+        pulseSettle.Completed:Wait()
 
         local uiFade = TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
         TweenService:Create(progressTrack, uiFade, { BackgroundTransparency = 0 }):Play()
@@ -314,7 +317,6 @@ function Loader.Start(onComplete)
 
         groupOut:Play()
         scaleOut:Play()
-        fadeVignette(vignetteEdges, 1, 0.3, Enum.EasingDirection.In)
         tween(blur, 0.3, { Size = 0 }, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
         groupOut.Completed:Wait()
 
