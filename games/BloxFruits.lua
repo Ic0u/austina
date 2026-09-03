@@ -3,7 +3,7 @@
 -- promotional clipboard action, and third-party remote loader are excluded.
 
 local BASE_URL = "https://raw.githubusercontent.com/Ic0u/austina/main/"
-local REMOTE_REVISION = "2026-09-03-full-port-3"
+local REMOTE_REVISION = "2026-09-03-full-port-4"
 local SUPPORTED_PLACES = {
     [2753915549] = true,
     [4442272183] = true,
@@ -14,6 +14,9 @@ if not SUPPORTED_PLACES[game.PlaceId] then
     warn("Austina Blox Fruits module was loaded in an unsupported place")
     return
 end
+
+local PlayersService = game:GetService("Players")
+local LocalPlayer = PlayersService.LocalPlayer or PlayersService.PlayerAdded:Wait()
 
 local environment = (getgenv and getgenv()) or _G
 if environment.AustinaBloxFruitsLoaded then
@@ -2608,12 +2611,16 @@ end
 
 
 function topos(Pos)
-    local plr = game.Players.LocalPlayer
-    if plr.Character and plr.Character.Humanoid.Health > 0 and plr.Character:FindFirstChild("HumanoidRootPart") then
-        local Distance = (Pos.Position - plr.Character.HumanoidRootPart.Position).Magnitude
-        if not Pos then
-            return
-        end
+    if not Pos then
+        return
+    end
+
+    local plr = LocalPlayer
+    local character = plr.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+    if humanoid and humanoid.Health > 0 and root then
+        local Distance = (Pos.Position - root.Position).Magnitude
         local nearestTeleport = CheckNearestTeleporter(Pos)
         if nearestTeleport then
             requestEntrance(nearestTeleport)
@@ -2650,43 +2657,35 @@ end
 
 function stopTeleport()
     isTeleporting = false
-    local plr = game.Players.LocalPlayer
-    if plr.Character:FindFirstChild("PartTele") then
-        plr.Character.PartTele:Destroy()
+    local character = LocalPlayer.Character
+    local teleportPart = character and character:FindFirstChild("PartTele")
+    if teleportPart then
+        teleportPart:Destroy()
     end
 end
 
 spawn(function()
-    while task.wait() do
-        if not isTeleporting then
-            stopTeleport()
+    while task.wait(0.1) do
+        local character = LocalPlayer.Character
+        local root = character and character:FindFirstChild("HumanoidRootPart")
+        local teleportPart = character and character:FindFirstChild("PartTele")
+        if root and teleportPart then
+            if (root.Position - teleportPart.Position).Magnitude >= 100 then
+                stopTeleport()
+            end
         end
     end
 end)
 
-spawn(function()
-    local plr = game.Players.LocalPlayer
-    while task.wait() do
-        pcall(function()
-            if plr.Character:FindFirstChild("PartTele") then
-                if (plr.Character.HumanoidRootPart.Position - plr.Character.PartTele.Position).Magnitude >= 100 then
-                    stopTeleport()
-                end
-            end
-        end)
-    end
-end)
-
-local plr = game.Players.LocalPlayer
 local function onCharacterAdded(character)
     local humanoid = character:WaitForChild("Humanoid")
     humanoid.Died:Connect(function()
         stopTeleport()
     end)
 end
-plr.CharacterAdded:Connect(onCharacterAdded)
-if plr.Character then
-    onCharacterAdded(plr.Character)
+LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
+if LocalPlayer.Character then
+    onCharacterAdded(LocalPlayer.Character)
 end
 function TP1(Pos)
     topos(Pos)
