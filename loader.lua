@@ -144,7 +144,8 @@ local function bindResponsiveScale(uiScale)
 
         local viewport = camera.ViewportSize
         local scale = math.min(viewport.X / 1280, viewport.Y / 720)
-        uiScale.Scale = math.clamp(scale, 0.72, 1.65)
+        scale = math.clamp(scale, 0.72, 1.65)
+        uiScale.Scale = math.floor(scale * 20 + 0.5) / 20
     end
 
     local function bindCamera()
@@ -172,10 +173,9 @@ local function bindResponsiveScale(uiScale)
 end
 
 local function createLoaderContent(parent)
-    local group = Instance.new("CanvasGroup")
-    group.Name = "LoaderContentGroup"
+    local group = Instance.new("Frame")
+    group.Name = "LoaderContent"
     group.BackgroundTransparency = 1
-    group.GroupTransparency = 1
     group.Size = UDim2.fromScale(1, 1)
     group.Parent = parent
 
@@ -236,8 +236,8 @@ local function createLoaderContent(parent)
 
         local letterStroke = Instance.new("UIStroke")
         letterStroke.Color = Color3.fromRGB(70, 157, 101)
-        letterStroke.Thickness = 1.5
-        letterStroke.Transparency = 0.12
+        letterStroke.Thickness = 1
+        letterStroke.Transparency = 1
         letterStroke.Parent = letter
 
         local letterGradient = Instance.new("UIGradient")
@@ -256,6 +256,7 @@ local function createLoaderContent(parent)
         table.insert(letterViews, {
             Label = letter,
             Scale = letterScale,
+            Stroke = letterStroke,
         })
     end
 
@@ -299,7 +300,7 @@ local function createLoaderContent(parent)
     status.TextXAlignment = Enum.TextXAlignment.Center
     status.Parent = container
 
-    return group, responsiveScale, titleScale, letterViews, status, progressTrack, progressFill
+    return responsiveScale, titleScale, letterViews, status, progressTrack, progressFill
 end
 
 local function fetchGameRegistry()
@@ -359,16 +360,13 @@ function Loader.Start(onComplete)
     blur.Parent = Lighting
 
     local vignetteEdges = createWhiteVignette(screenGui)
-    local contentGroup, responsiveScale, titleScale, letterViews, status, progressTrack, progressFill =
-        createLoaderContent(screenGui)
+    local responsiveScale, titleScale, letterViews, status, progressTrack, progressFill = createLoaderContent(screenGui)
     local disconnectResponsiveScale = bindResponsiveScale(responsiveScale)
 
     task.spawn(function()
         tweenVignette(vignetteEdges, 0.78, 0.45, Enum.EasingDirection.Out)
         local blurIn = tween(blur, 0.45, { Size = 20 })
         blurIn.Completed:Wait()
-
-        contentGroup.GroupTransparency = 0
 
         local lastLetterTween
         for _, view in ipairs(letterViews) do
@@ -388,6 +386,13 @@ function Loader.Start(onComplete)
                 0.42,
                 { Scale = 1 },
                 Enum.EasingStyle.Back,
+                Enum.EasingDirection.Out
+            )
+            tween(
+                view.Stroke,
+                0.3,
+                { Transparency = 0.12 },
+                Enum.EasingStyle.Quint,
                 Enum.EasingDirection.Out
             )
             task.wait(0.065)
@@ -425,15 +430,36 @@ function Loader.Start(onComplete)
         setProgress("Loading Assets...", 0.80, 0.65)
         setProgress("Initialization complete.", 1, 0.45)
 
-        local outro = TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
-        local groupOut = TweenService:Create(contentGroup, outro, { GroupTransparency = 1 })
-        local scaleOut = TweenService:Create(titleScale, outro, { Scale = 0.94 })
+        for _, view in ipairs(letterViews) do
+            tween(
+                view.Label,
+                0.3,
+                { TextTransparency = 1, Position = UDim2.fromOffset(0, -6) },
+                Enum.EasingStyle.Quint,
+                Enum.EasingDirection.In
+            )
+            tween(
+                view.Stroke,
+                0.24,
+                { Transparency = 1 },
+                Enum.EasingStyle.Quint,
+                Enum.EasingDirection.In
+            )
+        end
 
-        groupOut:Play()
-        scaleOut:Play()
+        tween(titleScale, 0.3, { Scale = 0.94 }, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
+        tween(progressTrack, 0.26, { BackgroundTransparency = 1 }, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
+        tween(progressFill, 0.26, { BackgroundTransparency = 1 }, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
+        local statusOut = tween(
+            status,
+            0.3,
+            { TextTransparency = 1 },
+            Enum.EasingStyle.Quint,
+            Enum.EasingDirection.In
+        )
         tweenVignette(vignetteEdges, 1, 0.3, Enum.EasingDirection.In)
         tween(blur, 0.3, { Size = 0 }, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
-        groupOut.Completed:Wait()
+        statusOut.Completed:Wait()
 
         disconnectResponsiveScale()
         if blur.Parent then
