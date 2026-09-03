@@ -12,7 +12,11 @@ local Workspace = game:GetService("Workspace")
 local BASE_URL = "https://raw.githubusercontent.com/Ic0u/austina/main/"
 local GUI_NAME = "AustinaLoaderGui"
 local BLUR_NAME = "AustinaLoaderBlur"
-local DEFAULT_GAMES = {}
+local DEFAULT_GAMES = {
+    ["2753915549"] = "Blox Fruits - First Sea",
+    ["4442272183"] = "Blox Fruits - Second Sea",
+    ["7449423635"] = "Blox Fruits - Third Sea",
+}
 
 local function tween(instance, duration, properties, style, direction)
     local animation = TweenService:Create(
