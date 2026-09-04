@@ -197,8 +197,8 @@ local function bindResponsiveScale(uiScale)
         end
 
         local viewport = camera.ViewportSize
-        local scale = math.min(viewport.X / 1280, viewport.Y / 720)
-        scale = math.clamp(scale, 0.72, 1.65)
+        local scale = math.min(viewport.X / 1600, viewport.Y / 900)
+        scale = math.clamp(scale, 0.68, 1)
         uiScale.Scale = math.floor(scale * 20 + 0.5) / 20
     end
 
@@ -229,9 +229,11 @@ end
 local function createLoaderContent(parent)
     local group = Instance.new("CanvasGroup")
     group.Name = "LoaderContent"
+    group.AnchorPoint = Vector2.new(0.5, 0.5)
     group.BackgroundTransparency = 1
     group.GroupTransparency = 1
-    group.Size = UDim2.fromScale(1, 1)
+    group.Position = UDim2.fromScale(0.5, 0.5)
+    group.Size = UDim2.fromOffset(560, 240)
     group.Parent = parent
 
     local container = Instance.new("Frame")
@@ -239,50 +241,19 @@ local function createLoaderContent(parent)
     container.AnchorPoint = Vector2.new(0.5, 0.5)
     container.BackgroundTransparency = 1
     container.Position = UDim2.fromScale(0.5, 0.5)
-    container.Size = UDim2.fromOffset(440, 210)
+    container.Size = UDim2.fromScale(1, 1)
     container.Parent = group
 
     local responsiveScale = Instance.new("UIScale")
     responsiveScale.Scale = 1
     responsiveScale.Parent = container
 
-    local halo = Instance.new("Frame")
-    halo.Name = "BrandHalo"
-    halo.AnchorPoint = Vector2.new(0.5, 0.5)
-    halo.BackgroundTransparency = 1
-    halo.Position = UDim2.fromScale(0.5, 0.34)
-    halo.Size = UDim2.fromOffset(88, 88)
-    halo.Parent = container
-
-    local haloCorner = Instance.new("UICorner")
-    haloCorner.CornerRadius = UDim.new(1, 0)
-    haloCorner.Parent = halo
-
-    local haloStroke = Instance.new("UIStroke")
-    haloStroke.Color = Color3.fromRGB(115, 214, 143)
-    haloStroke.Thickness = 1.25
-    haloStroke.Transparency = 1
-    haloStroke.Parent = halo
-
-    local haloGradient = Instance.new("UIGradient")
-    haloGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(72, 157, 101)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(222, 255, 231)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(72, 157, 101)),
-    })
-    haloGradient.Rotation = 32
-    haloGradient.Parent = haloStroke
-
-    local haloScale = Instance.new("UIScale")
-    haloScale.Scale = 0.58
-    haloScale.Parent = halo
-
     local title = Instance.new("Frame")
     title.Name = "Title"
     title.AnchorPoint = Vector2.new(0.5, 0.5)
     title.BackgroundTransparency = 1
-    title.Position = UDim2.fromScale(0.5, 0.34)
-    title.Size = UDim2.fromOffset(300, 52)
+    title.Position = UDim2.fromScale(0.5, 0.36)
+    title.Size = UDim2.fromOffset(380, 64)
     title.Parent = container
 
     local titleScale = Instance.new("UIScale")
@@ -292,7 +263,7 @@ local function createLoaderContent(parent)
     local titleLayout = Instance.new("UIListLayout")
     titleLayout.FillDirection = Enum.FillDirection.Horizontal
     titleLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    titleLayout.Padding = UDim.new(0, 8)
+    titleLayout.Padding = UDim.new(0, 9)
     titleLayout.SortOrder = Enum.SortOrder.LayoutOrder
     titleLayout.VerticalAlignment = Enum.VerticalAlignment.Center
     titleLayout.Parent = title
@@ -304,19 +275,19 @@ local function createLoaderContent(parent)
         slot.Name = "LetterSlot" .. index
         slot.BackgroundTransparency = 1
         slot.LayoutOrder = index
-        slot.Size = UDim2.fromOffset(33, 52)
+        slot.Size = UDim2.fromOffset(40, 60)
         slot.Parent = title
 
         local letter = Instance.new("TextLabel")
         letter.Name = "Letter" .. index
         letter.BackgroundTransparency = 1
         letter.Font = Enum.Font.FredokaOne
-        letter.Position = UDim2.fromOffset(0, 22)
+        letter.Position = UDim2.fromOffset(0, 24)
         letter.Rotation = letterRotations[index]
         letter.Size = UDim2.fromScale(1, 1)
         letter.Text = character
         letter.TextColor3 = Color3.fromRGB(230, 255, 237)
-        letter.TextSize = 34
+        letter.TextSize = 42
         letter.TextTransparency = 1
         letter.Parent = slot
 
@@ -348,50 +319,14 @@ local function createLoaderContent(parent)
         })
     end
 
-    local ambientDots = {}
-    local dotPositions = {
-        UDim2.fromScale(0.18, 0.22),
-        UDim2.fromScale(0.30, 0.54),
-        UDim2.fromScale(0.76, 0.18),
-        UDim2.fromScale(0.83, 0.48),
-        UDim2.fromScale(0.12, 0.62),
-        UDim2.fromScale(0.90, 0.66),
-    }
-    for index, position in ipairs(dotPositions) do
-        local dot = Instance.new("Frame")
-        dot.Name = "AmbientDot" .. index
-        dot.AnchorPoint = Vector2.new(0.5, 0.5)
-        dot.BackgroundColor3 = index % 2 == 0
-            and Color3.fromRGB(211, 250, 222)
-            or Color3.fromRGB(101, 190, 128)
-        dot.BackgroundTransparency = 1
-        dot.BorderSizePixel = 0
-        dot.Position = position
-        dot.Size = UDim2.fromOffset(index % 3 == 0 and 4 or 3, index % 3 == 0 and 4 or 3)
-        dot.Parent = container
-
-        local dotCorner = Instance.new("UICorner")
-        dotCorner.CornerRadius = UDim.new(1, 0)
-        dotCorner.Parent = dot
-
-        local dotScale = Instance.new("UIScale")
-        dotScale.Scale = 0.35
-        dotScale.Parent = dot
-
-        table.insert(ambientDots, {
-            Dot = dot,
-            Scale = dotScale,
-        })
-    end
-
     local progressTrack = Instance.new("Frame")
     progressTrack.Name = "ProgressTrack"
     progressTrack.AnchorPoint = Vector2.new(0.5, 0.5)
     progressTrack.BackgroundColor3 = Color3.fromRGB(238, 237, 241)
     progressTrack.BackgroundTransparency = 1
     progressTrack.BorderSizePixel = 0
-    progressTrack.Position = UDim2.fromScale(0.5, 0.69)
-    progressTrack.Size = UDim2.fromOffset(260, 4)
+    progressTrack.Position = UDim2.fromScale(0.5, 0.68)
+    progressTrack.Size = UDim2.fromOffset(320, 4)
     progressTrack.Parent = container
 
     local trackCorner = Instance.new("UICorner")
@@ -419,48 +354,16 @@ local function createLoaderContent(parent)
     fillGradient.Offset = Vector2.new(-1, 0)
     fillGradient.Parent = progressFill
 
-    local progressValue = Instance.new("TextLabel")
-    progressValue.Name = "ProgressValue"
-    progressValue.AnchorPoint = Vector2.new(1, 1)
-    progressValue.BackgroundTransparency = 1
-    progressValue.Font = Enum.Font.GothamMedium
-    progressValue.Position = UDim2.new(0.5, 130, 0.69, -8)
-    progressValue.Size = UDim2.fromOffset(44, 16)
-    progressValue.Text = "00%"
-    progressValue.TextColor3 = Color3.fromRGB(223, 249, 230)
-    progressValue.TextSize = 11
-    progressValue.TextTransparency = 1
-    progressValue.TextXAlignment = Enum.TextXAlignment.Right
-    progressValue.Parent = container
-
-    local statusDot = Instance.new("Frame")
-    statusDot.Name = "StatusDot"
-    statusDot.AnchorPoint = Vector2.new(0.5, 0.5)
-    statusDot.BackgroundColor3 = Color3.fromRGB(112, 211, 141)
-    statusDot.BackgroundTransparency = 1
-    statusDot.BorderSizePixel = 0
-    statusDot.Position = UDim2.new(0.5, -74, 0.82, 0)
-    statusDot.Size = UDim2.fromOffset(5, 5)
-    statusDot.Parent = container
-
-    local statusDotCorner = Instance.new("UICorner")
-    statusDotCorner.CornerRadius = UDim.new(1, 0)
-    statusDotCorner.Parent = statusDot
-
-    local statusDotScale = Instance.new("UIScale")
-    statusDotScale.Scale = 0.5
-    statusDotScale.Parent = statusDot
-
     local status = Instance.new("TextLabel")
     status.Name = "Status"
     status.AnchorPoint = Vector2.new(0.5, 0.5)
     status.BackgroundTransparency = 1
     status.Position = UDim2.fromScale(0.5, 0.82)
-    status.Size = UDim2.fromOffset(280, 18)
+    status.Size = UDim2.fromOffset(360, 24)
     status.Font = Enum.Font.PatrickHand
     status.Text = "Initializing..."
     status.TextColor3 = Color3.fromRGB(246, 242, 244)
-    status.TextSize = 16
+    status.TextSize = 19
     status.TextTransparency = 1
     status.TextXAlignment = Enum.TextXAlignment.Center
     status.Parent = container
@@ -470,17 +373,10 @@ local function createLoaderContent(parent)
         ResponsiveScale = responsiveScale,
         TitleScale = titleScale,
         LetterViews = letterViews,
-        AmbientDots = ambientDots,
-        HaloScale = haloScale,
-        HaloStroke = haloStroke,
-        HaloGradient = haloGradient,
         ProgressTrack = progressTrack,
         ProgressFill = progressFill,
         ProgressGradient = fillGradient,
-        ProgressValue = progressValue,
         Status = status,
-        StatusDot = statusDot,
-        StatusDotScale = statusDotScale,
     }
 end
 
@@ -559,38 +455,6 @@ function Loader.Start(onComplete)
             Enum.EasingStyle.Quint,
             Enum.EasingDirection.Out
         )
-        tween(
-            views.HaloScale,
-            0.62,
-            { Scale = 1.12 },
-            Enum.EasingStyle.Back,
-            Enum.EasingDirection.Out
-        )
-        tween(views.HaloStroke, 0.4, { Transparency = 0.72 })
-        tween(
-            views.HaloGradient,
-            2.8,
-            { Rotation = 212 },
-            Enum.EasingStyle.Linear,
-            Enum.EasingDirection.Out
-        )
-
-        for index, dotView in ipairs(views.AmbientDots) do
-            task.delay((index - 1) * 0.055, function()
-                if dotView.Dot.Parent then
-                    tween(dotView.Dot, 0.34, {
-                        BackgroundTransparency = index % 2 == 0 and 0.48 or 0.62,
-                    })
-                    tween(
-                        dotView.Scale,
-                        0.46,
-                        { Scale = 1 },
-                        Enum.EasingStyle.Back,
-                        Enum.EasingDirection.Out
-                    )
-                end
-            end)
-        end
         contentIn.Completed:Wait()
 
         local lastLetterTween
@@ -638,24 +502,14 @@ function Loader.Start(onComplete)
         local uiFade = TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
         TweenService:Create(views.ProgressTrack, uiFade, { BackgroundTransparency = 0.56 }):Play()
         TweenService:Create(views.ProgressFill, uiFade, { BackgroundTransparency = 0 }):Play()
-        TweenService:Create(views.ProgressValue, uiFade, { TextTransparency = 0.12 }):Play()
         task.wait(0.1)
         TweenService:Create(views.Status, uiFade, { TextTransparency = 0 }):Play()
-        TweenService:Create(views.StatusDot, uiFade, { BackgroundTransparency = 0.08 }):Play()
-        tween(
-            views.StatusDotScale,
-            0.34,
-            { Scale = 1 },
-            Enum.EasingStyle.Back,
-            Enum.EasingDirection.Out
-        )
         task.wait(0.25)
 
         local function setProgress(message, percent, holdTime)
             local hideStatus = tween(views.Status, 0.12, { TextTransparency = 1 })
             hideStatus.Completed:Wait()
             views.Status.Text = message
-            views.ProgressValue.Text = string.format("%02d%%", math.floor(percent * 100 + 0.5))
             views.ProgressGradient.Offset = Vector2.new(-1, 0)
             tween(views.Status, 0.18, { TextTransparency = 0 })
             tween(views.ProgressFill, 0.62, { Size = UDim2.fromScale(percent, 1) })
@@ -666,33 +520,12 @@ function Loader.Start(onComplete)
                 Enum.EasingStyle.Sine,
                 Enum.EasingDirection.InOut
             )
-            task.spawn(function()
-                local dotUp = tween(
-                    views.StatusDotScale,
-                    0.14,
-                    { Scale = 1.42 },
-                    Enum.EasingStyle.Sine,
-                    Enum.EasingDirection.Out
-                )
-                dotUp.Completed:Wait()
-                tween(views.StatusDotScale, 0.24, { Scale = 1 }, Enum.EasingStyle.Back)
-            end)
             task.wait(holdTime)
         end
 
-        setProgress("Checking whitelist...", 0.24, 0.54)
-        setProgress("Verifying runtime...", 0.52, 0.52)
-        setProgress("Loading interface...", 0.78, 0.5)
-        setProgress("Austina is ready.", 1, 0.42)
-
-        tween(
-            views.HaloScale,
-            0.34,
-            { Scale = 1.34 },
-            Enum.EasingStyle.Back,
-            Enum.EasingDirection.Out
-        )
-        tween(views.HaloStroke, 0.34, { Transparency = 0.88 })
+        setProgress("Initializing...", 0.3, 0.52)
+        setProgress("Loading...", 0.74, 0.54)
+        setProgress("Ready.", 1, 0.36)
 
         for index, view in ipairs(views.LetterViews) do
             task.delay((index - 1) * 0.025, function()
