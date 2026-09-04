@@ -1,7 +1,5 @@
 -- Austina cinematic loader module.
--- Usage:
--- local response = request({ Url = "https://raw.githubusercontent.com/Ic0u/austina/main/loader.lua", Method = "GET" })
--- loadstring(response.Body)().Start()
+-- Minimal request bootstrap: https://raw.githubusercontent.com/Ic0u/austina/main/bootstrap.lua
 
 local Loader = {}
 
