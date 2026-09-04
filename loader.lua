@@ -9,6 +9,7 @@ local HttpService = game:GetService("HttpService")
 local Workspace = game:GetService("Workspace")
 
 local BASE_URL = "https://raw.githubusercontent.com/Ic0u/austina/main/"
+local UNIVERSAL_URL = "https://raw.githubusercontent.com/Ic0u/austina/b1edf1e/scripts/Universal.lua"
 local GUI_NAME = "AustinaLoaderGui"
 local BLUR_NAME = "AustinaLoaderBlur"
 local DEFAULT_GAMES = {
@@ -411,8 +412,10 @@ end
 local function launchDefaultScript()
     local supportedGames = fetchGameRegistry()
     local placeId = tostring(game.PlaceId)
-    local path = supportedGames[placeId] and ("games/" .. placeId .. ".lua") or "scripts/Universal.lua"
-    runSource(BASE_URL .. path)
+    local scriptUrl = supportedGames[placeId]
+        and (BASE_URL .. "games/" .. placeId .. ".lua")
+        or UNIVERSAL_URL
+    runSource(scriptUrl)
 end
 
 function Loader.Start(onComplete)
