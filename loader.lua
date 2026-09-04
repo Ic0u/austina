@@ -1,5 +1,7 @@
 -- Austina cinematic loader module.
--- Usage: loadstring(game:HttpGet("https://raw.githubusercontent.com/Ic0u/austina/main/loader.lua"))().Start()
+-- Usage:
+-- local response = request({ Url = "https://raw.githubusercontent.com/Ic0u/austina/main/loader.lua", Method = "GET" })
+-- loadstring(response.Body)().Start()
 
 local Loader = {}
 
@@ -17,6 +19,57 @@ local DEFAULT_GAMES = {
     ["4442272183"] = "Blox Fruits - Second Sea",
     ["7449423635"] = "Blox Fruits - Third Sea",
 }
+
+local function resolveRequestFunction()
+    local environment = (getgenv and getgenv()) or _G
+    local synapse = environment.syn
+    local fluxus = environment.fluxus
+    local http = environment.http
+
+    local candidate = environment.request
+        or environment.http_request
+        or (synapse and synapse.request)
+        or (fluxus and fluxus.request)
+        or (http and http.request)
+
+    return type(candidate) == "function" and candidate or nil
+end
+
+local requestFunction = resolveRequestFunction()
+
+local function fetchText(url)
+    if requestFunction then
+        local requested, response = pcall(requestFunction, {
+            Url = url,
+            Method = "GET",
+            Headers = {
+                ["Accept"] = "text/plain",
+                ["Cache-Control"] = "no-cache",
+            },
+        })
+
+        if requested and type(response) == "string" and response ~= "" then
+            return response
+        end
+
+        if requested and type(response) == "table" then
+            local statusCode = tonumber(response.StatusCode or response.Status)
+            local body = response.Body or response.body
+            if type(body) == "string" and body ~= ""
+                and response.Success ~= false
+                and (not statusCode or (statusCode >= 200 and statusCode < 300)) then
+                return body
+            end
+        end
+    end
+
+    local fetched, body = pcall(game.HttpGet, game, url)
+    if fetched and type(body) == "string" and body ~= "" then
+        return body
+    end
+
+    return nil
+end
 
 local function tween(instance, duration, properties, style, direction)
     local animation = TweenService:Create(
@@ -177,9 +230,10 @@ local function bindResponsiveScale(uiScale)
 end
 
 local function createLoaderContent(parent)
-    local group = Instance.new("Frame")
+    local group = Instance.new("CanvasGroup")
     group.Name = "LoaderContent"
     group.BackgroundTransparency = 1
+    group.GroupTransparency = 1
     group.Size = UDim2.fromScale(1, 1)
     group.Parent = parent
 
@@ -188,19 +242,50 @@ local function createLoaderContent(parent)
     container.AnchorPoint = Vector2.new(0.5, 0.5)
     container.BackgroundTransparency = 1
     container.Position = UDim2.fromScale(0.5, 0.5)
-    container.Size = UDim2.fromOffset(420, 180)
+    container.Size = UDim2.fromOffset(440, 210)
     container.Parent = group
 
     local responsiveScale = Instance.new("UIScale")
     responsiveScale.Scale = 1
     responsiveScale.Parent = container
 
+    local halo = Instance.new("Frame")
+    halo.Name = "BrandHalo"
+    halo.AnchorPoint = Vector2.new(0.5, 0.5)
+    halo.BackgroundTransparency = 1
+    halo.Position = UDim2.fromScale(0.5, 0.34)
+    halo.Size = UDim2.fromOffset(88, 88)
+    halo.Parent = container
+
+    local haloCorner = Instance.new("UICorner")
+    haloCorner.CornerRadius = UDim.new(1, 0)
+    haloCorner.Parent = halo
+
+    local haloStroke = Instance.new("UIStroke")
+    haloStroke.Color = Color3.fromRGB(115, 214, 143)
+    haloStroke.Thickness = 1.25
+    haloStroke.Transparency = 1
+    haloStroke.Parent = halo
+
+    local haloGradient = Instance.new("UIGradient")
+    haloGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(72, 157, 101)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(222, 255, 231)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(72, 157, 101)),
+    })
+    haloGradient.Rotation = 32
+    haloGradient.Parent = haloStroke
+
+    local haloScale = Instance.new("UIScale")
+    haloScale.Scale = 0.58
+    haloScale.Parent = halo
+
     local title = Instance.new("Frame")
     title.Name = "Title"
     title.AnchorPoint = Vector2.new(0.5, 0.5)
     title.BackgroundTransparency = 1
-    title.Position = UDim2.fromScale(0.5, 0.3)
-    title.Size = UDim2.fromOffset(286, 48)
+    title.Position = UDim2.fromScale(0.5, 0.34)
+    title.Size = UDim2.fromOffset(300, 52)
     title.Parent = container
 
     local titleScale = Instance.new("UIScale")
@@ -210,7 +295,7 @@ local function createLoaderContent(parent)
     local titleLayout = Instance.new("UIListLayout")
     titleLayout.FillDirection = Enum.FillDirection.Horizontal
     titleLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    titleLayout.Padding = UDim.new(0, 7)
+    titleLayout.Padding = UDim.new(0, 8)
     titleLayout.SortOrder = Enum.SortOrder.LayoutOrder
     titleLayout.VerticalAlignment = Enum.VerticalAlignment.Center
     titleLayout.Parent = title
@@ -222,25 +307,25 @@ local function createLoaderContent(parent)
         slot.Name = "LetterSlot" .. index
         slot.BackgroundTransparency = 1
         slot.LayoutOrder = index
-        slot.Size = UDim2.fromOffset(32, 48)
+        slot.Size = UDim2.fromOffset(33, 52)
         slot.Parent = title
 
         local letter = Instance.new("TextLabel")
         letter.Name = "Letter" .. index
         letter.BackgroundTransparency = 1
         letter.Font = Enum.Font.FredokaOne
-        letter.Position = UDim2.fromOffset(0, 18)
+        letter.Position = UDim2.fromOffset(0, 22)
         letter.Rotation = letterRotations[index]
         letter.Size = UDim2.fromScale(1, 1)
         letter.Text = character
         letter.TextColor3 = Color3.fromRGB(230, 255, 237)
-        letter.TextSize = 32
+        letter.TextSize = 34
         letter.TextTransparency = 1
         letter.Parent = slot
 
         local letterStroke = Instance.new("UIStroke")
         letterStroke.Color = Color3.fromRGB(70, 157, 101)
-        letterStroke.Thickness = 1
+        letterStroke.Thickness = 1.25
         letterStroke.Transparency = 1
         letterStroke.Parent = letter
 
@@ -250,6 +335,7 @@ local function createLoaderContent(parent)
             ColorSequenceKeypoint.new(0.5, Color3.fromRGB(232, 255, 237)),
             ColorSequenceKeypoint.new(1, Color3.fromRGB(87, 180, 116)),
         })
+        letterGradient.Offset = Vector2.new(-0.22, 0)
         letterGradient.Rotation = 90
         letterGradient.Parent = letter
 
@@ -261,6 +347,43 @@ local function createLoaderContent(parent)
             Label = letter,
             Scale = letterScale,
             Stroke = letterStroke,
+            Gradient = letterGradient,
+        })
+    end
+
+    local ambientDots = {}
+    local dotPositions = {
+        UDim2.fromScale(0.18, 0.22),
+        UDim2.fromScale(0.30, 0.54),
+        UDim2.fromScale(0.76, 0.18),
+        UDim2.fromScale(0.83, 0.48),
+        UDim2.fromScale(0.12, 0.62),
+        UDim2.fromScale(0.90, 0.66),
+    }
+    for index, position in ipairs(dotPositions) do
+        local dot = Instance.new("Frame")
+        dot.Name = "AmbientDot" .. index
+        dot.AnchorPoint = Vector2.new(0.5, 0.5)
+        dot.BackgroundColor3 = index % 2 == 0
+            and Color3.fromRGB(211, 250, 222)
+            or Color3.fromRGB(101, 190, 128)
+        dot.BackgroundTransparency = 1
+        dot.BorderSizePixel = 0
+        dot.Position = position
+        dot.Size = UDim2.fromOffset(index % 3 == 0 and 4 or 3, index % 3 == 0 and 4 or 3)
+        dot.Parent = container
+
+        local dotCorner = Instance.new("UICorner")
+        dotCorner.CornerRadius = UDim.new(1, 0)
+        dotCorner.Parent = dot
+
+        local dotScale = Instance.new("UIScale")
+        dotScale.Scale = 0.35
+        dotScale.Parent = dot
+
+        table.insert(ambientDots, {
+            Dot = dot,
+            Scale = dotScale,
         })
     end
 
@@ -270,8 +393,8 @@ local function createLoaderContent(parent)
     progressTrack.BackgroundColor3 = Color3.fromRGB(238, 237, 241)
     progressTrack.BackgroundTransparency = 1
     progressTrack.BorderSizePixel = 0
-    progressTrack.Position = UDim2.fromScale(0.5, 0.68)
-    progressTrack.Size = UDim2.fromOffset(230, 3)
+    progressTrack.Position = UDim2.fromScale(0.5, 0.69)
+    progressTrack.Size = UDim2.fromOffset(260, 4)
     progressTrack.Parent = container
 
     local trackCorner = Instance.new("UICorner")
@@ -290,11 +413,52 @@ local function createLoaderContent(parent)
     fillCorner.CornerRadius = UDim.new(1, 0)
     fillCorner.Parent = progressFill
 
+    local fillGradient = Instance.new("UIGradient")
+    fillGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(67, 159, 98)),
+        ColorSequenceKeypoint.new(0.55, Color3.fromRGB(221, 255, 230)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(82, 184, 116)),
+    })
+    fillGradient.Offset = Vector2.new(-1, 0)
+    fillGradient.Parent = progressFill
+
+    local progressValue = Instance.new("TextLabel")
+    progressValue.Name = "ProgressValue"
+    progressValue.AnchorPoint = Vector2.new(1, 1)
+    progressValue.BackgroundTransparency = 1
+    progressValue.Font = Enum.Font.GothamMedium
+    progressValue.Position = UDim2.new(0.5, 130, 0.69, -8)
+    progressValue.Size = UDim2.fromOffset(44, 16)
+    progressValue.Text = "00%"
+    progressValue.TextColor3 = Color3.fromRGB(223, 249, 230)
+    progressValue.TextSize = 11
+    progressValue.TextTransparency = 1
+    progressValue.TextXAlignment = Enum.TextXAlignment.Right
+    progressValue.Parent = container
+
+    local statusDot = Instance.new("Frame")
+    statusDot.Name = "StatusDot"
+    statusDot.AnchorPoint = Vector2.new(0.5, 0.5)
+    statusDot.BackgroundColor3 = Color3.fromRGB(112, 211, 141)
+    statusDot.BackgroundTransparency = 1
+    statusDot.BorderSizePixel = 0
+    statusDot.Position = UDim2.new(0.5, -74, 0.82, 0)
+    statusDot.Size = UDim2.fromOffset(5, 5)
+    statusDot.Parent = container
+
+    local statusDotCorner = Instance.new("UICorner")
+    statusDotCorner.CornerRadius = UDim.new(1, 0)
+    statusDotCorner.Parent = statusDot
+
+    local statusDotScale = Instance.new("UIScale")
+    statusDotScale.Scale = 0.5
+    statusDotScale.Parent = statusDot
+
     local status = Instance.new("TextLabel")
     status.Name = "Status"
     status.AnchorPoint = Vector2.new(0.5, 0.5)
     status.BackgroundTransparency = 1
-    status.Position = UDim2.fromScale(0.5, 0.83)
+    status.Position = UDim2.fromScale(0.5, 0.82)
     status.Size = UDim2.fromOffset(280, 18)
     status.Font = Enum.Font.PatrickHand
     status.Text = "Initializing..."
@@ -304,12 +468,28 @@ local function createLoaderContent(parent)
     status.TextXAlignment = Enum.TextXAlignment.Center
     status.Parent = container
 
-    return responsiveScale, titleScale, letterViews, status, progressTrack, progressFill
+    return {
+        Group = group,
+        ResponsiveScale = responsiveScale,
+        TitleScale = titleScale,
+        LetterViews = letterViews,
+        AmbientDots = ambientDots,
+        HaloScale = haloScale,
+        HaloStroke = haloStroke,
+        HaloGradient = haloGradient,
+        ProgressTrack = progressTrack,
+        ProgressFill = progressFill,
+        ProgressGradient = fillGradient,
+        ProgressValue = progressValue,
+        Status = status,
+        StatusDot = statusDot,
+        StatusDotScale = statusDotScale,
+    }
 end
 
 local function fetchGameRegistry()
-    local ok, response = pcall(game.HttpGet, game, BASE_URL .. "games.json")
-    if not ok or response == "" then
+    local response = fetchText(BASE_URL .. "games.json")
+    if not response then
         return DEFAULT_GAMES
     end
 
@@ -322,8 +502,8 @@ local function fetchGameRegistry()
 end
 
 local function runSource(url)
-    local fetched, source = pcall(game.HttpGet, game, url)
-    if not fetched or type(source) ~= "string" or source == "" then
+    local source = fetchText(url)
+    if not source then
         return false
     end
 
@@ -367,19 +547,60 @@ function Loader.Start(onComplete)
     blur.Parent = Lighting
 
     local vignetteEdges = createWhiteVignette(screenGui)
-    local responsiveScale, titleScale, letterViews, status, progressTrack, progressFill = createLoaderContent(screenGui)
-    local disconnectResponsiveScale = bindResponsiveScale(responsiveScale)
+    local views = createLoaderContent(screenGui)
+    local disconnectResponsiveScale = bindResponsiveScale(views.ResponsiveScale)
 
     task.spawn(function()
-        tweenVignette(vignetteEdges, 0.78, 0.45, Enum.EasingDirection.Out)
-        local blurIn = tween(blur, 0.45, { Size = 20 })
+        tweenVignette(vignetteEdges, 0.82, 0.48, Enum.EasingDirection.Out)
+        local blurIn = tween(blur, 0.48, { Size = 20 })
         blurIn.Completed:Wait()
 
+        local contentIn = tween(
+            views.Group,
+            0.24,
+            { GroupTransparency = 0 },
+            Enum.EasingStyle.Quint,
+            Enum.EasingDirection.Out
+        )
+        tween(
+            views.HaloScale,
+            0.62,
+            { Scale = 1.12 },
+            Enum.EasingStyle.Back,
+            Enum.EasingDirection.Out
+        )
+        tween(views.HaloStroke, 0.4, { Transparency = 0.72 })
+        tween(
+            views.HaloGradient,
+            2.8,
+            { Rotation = 212 },
+            Enum.EasingStyle.Linear,
+            Enum.EasingDirection.Out
+        )
+
+        for index, dotView in ipairs(views.AmbientDots) do
+            task.delay((index - 1) * 0.055, function()
+                if dotView.Dot.Parent then
+                    tween(dotView.Dot, 0.34, {
+                        BackgroundTransparency = index % 2 == 0 and 0.48 or 0.62,
+                    })
+                    tween(
+                        dotView.Scale,
+                        0.46,
+                        { Scale = 1 },
+                        Enum.EasingStyle.Back,
+                        Enum.EasingDirection.Out
+                    )
+                end
+            end)
+        end
+        contentIn.Completed:Wait()
+
         local lastLetterTween
-        for _, view in ipairs(letterViews) do
+        for _, view in ipairs(views.LetterViews) do
             lastLetterTween = tween(
                 view.Label,
-                0.42,
+                0.44,
                 {
                     Position = UDim2.fromOffset(0, 0),
                     Rotation = 0,
@@ -390,83 +611,114 @@ function Loader.Start(onComplete)
             )
             tween(
                 view.Scale,
-                0.42,
+                0.44,
                 { Scale = 1 },
                 Enum.EasingStyle.Back,
                 Enum.EasingDirection.Out
             )
             tween(
                 view.Stroke,
-                0.3,
-                { Transparency = 0.12 },
+                0.32,
+                { Transparency = 0.16 },
                 Enum.EasingStyle.Quint,
                 Enum.EasingDirection.Out
             )
-            task.wait(0.065)
+            tween(view.Gradient, 0.48, { Offset = Vector2.new(0.22, 0) })
+            task.wait(0.048)
         end
 
         if lastLetterTween then
             lastLetterTween.Completed:Wait()
         end
 
-        local pulseUp = tween(titleScale, 0.16, { Scale = 1.06 }, Enum.EasingStyle.Sine)
+        local pulseUp = tween(views.TitleScale, 0.16, { Scale = 1.055 }, Enum.EasingStyle.Sine)
         pulseUp.Completed:Wait()
-        local pulseDown = tween(titleScale, 0.18, { Scale = 0.985 }, Enum.EasingStyle.Sine)
+        local pulseDown = tween(views.TitleScale, 0.18, { Scale = 0.988 }, Enum.EasingStyle.Sine)
         pulseDown.Completed:Wait()
-        local pulseSettle = tween(titleScale, 0.22, { Scale = 1 }, Enum.EasingStyle.Sine)
+        local pulseSettle = tween(views.TitleScale, 0.22, { Scale = 1 }, Enum.EasingStyle.Sine)
         pulseSettle.Completed:Wait()
 
         local uiFade = TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
-        TweenService:Create(progressTrack, uiFade, { BackgroundTransparency = 0 }):Play()
-        TweenService:Create(progressFill, uiFade, { BackgroundTransparency = 0 }):Play()
+        TweenService:Create(views.ProgressTrack, uiFade, { BackgroundTransparency = 0.56 }):Play()
+        TweenService:Create(views.ProgressFill, uiFade, { BackgroundTransparency = 0 }):Play()
+        TweenService:Create(views.ProgressValue, uiFade, { TextTransparency = 0.12 }):Play()
         task.wait(0.1)
-        TweenService:Create(status, uiFade, { TextTransparency = 0 }):Play()
+        TweenService:Create(views.Status, uiFade, { TextTransparency = 0 }):Play()
+        TweenService:Create(views.StatusDot, uiFade, { BackgroundTransparency = 0.08 }):Play()
+        tween(
+            views.StatusDotScale,
+            0.34,
+            { Scale = 1 },
+            Enum.EasingStyle.Back,
+            Enum.EasingDirection.Out
+        )
         task.wait(0.25)
 
         local function setProgress(message, percent, holdTime)
-            local hideStatus = tween(status, 0.12, { TextTransparency = 1 })
+            local hideStatus = tween(views.Status, 0.12, { TextTransparency = 1 })
             hideStatus.Completed:Wait()
-            status.Text = message
-            tween(status, 0.18, { TextTransparency = 0 })
-            tween(progressFill, 0.55, { Size = UDim2.fromScale(percent, 1) })
+            views.Status.Text = message
+            views.ProgressValue.Text = string.format("%02d%%", math.floor(percent * 100 + 0.5))
+            views.ProgressGradient.Offset = Vector2.new(-1, 0)
+            tween(views.Status, 0.18, { TextTransparency = 0 })
+            tween(views.ProgressFill, 0.62, { Size = UDim2.fromScale(percent, 1) })
+            tween(
+                views.ProgressGradient,
+                0.72,
+                { Offset = Vector2.new(1, 0) },
+                Enum.EasingStyle.Sine,
+                Enum.EasingDirection.InOut
+            )
+            task.spawn(function()
+                local dotUp = tween(
+                    views.StatusDotScale,
+                    0.14,
+                    { Scale = 1.42 },
+                    Enum.EasingStyle.Sine,
+                    Enum.EasingDirection.Out
+                )
+                dotUp.Completed:Wait()
+                tween(views.StatusDotScale, 0.24, { Scale = 1 }, Enum.EasingStyle.Back)
+            end)
             task.wait(holdTime)
         end
 
-        setProgress("Checking Whitelist...", 0.35, 0.7)
-        setProgress("Bypassing Integrity...", 0.65, 0.7)
-        setProgress("Loading Assets...", 0.80, 0.65)
-        setProgress("Initialization complete.", 1, 0.45)
+        setProgress("Checking whitelist...", 0.24, 0.54)
+        setProgress("Verifying runtime...", 0.52, 0.52)
+        setProgress("Loading interface...", 0.78, 0.5)
+        setProgress("Austina is ready.", 1, 0.42)
 
-        for _, view in ipairs(letterViews) do
-            tween(
-                view.Label,
-                0.3,
-                { TextTransparency = 1, Position = UDim2.fromOffset(0, -6) },
-                Enum.EasingStyle.Quint,
-                Enum.EasingDirection.In
-            )
-            tween(
-                view.Stroke,
-                0.24,
-                { Transparency = 1 },
-                Enum.EasingStyle.Quint,
-                Enum.EasingDirection.In
-            )
+        tween(
+            views.HaloScale,
+            0.34,
+            { Scale = 1.34 },
+            Enum.EasingStyle.Back,
+            Enum.EasingDirection.Out
+        )
+        tween(views.HaloStroke, 0.34, { Transparency = 0.88 })
+
+        for index, view in ipairs(views.LetterViews) do
+            task.delay((index - 1) * 0.025, function()
+                if view.Scale.Parent then
+                    local rise = tween(view.Scale, 0.12, { Scale = 1.08 }, Enum.EasingStyle.Sine)
+                    rise.Completed:Wait()
+                    tween(view.Scale, 0.18, { Scale = 1 }, Enum.EasingStyle.Back)
+                end
+            end)
         end
+        task.wait(0.18)
 
-        tween(titleScale, 0.3, { Scale = 0.94 }, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
-        tween(progressTrack, 0.26, { BackgroundTransparency = 1 }, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
-        tween(progressFill, 0.26, { BackgroundTransparency = 1 }, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
-        local statusOut = tween(
-            status,
-            0.3,
-            { TextTransparency = 1 },
+        tween(views.TitleScale, 0.32, { Scale = 0.94 }, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
+        tweenVignette(vignetteEdges, 1, 0.34, Enum.EasingDirection.In)
+        tween(blur, 0.34, { Size = 0 }, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
+        local contentOut = tween(
+            views.Group,
+            0.34,
+            { GroupTransparency = 1 },
             Enum.EasingStyle.Quint,
             Enum.EasingDirection.In
         )
-        tweenVignette(vignetteEdges, 1, 0.3, Enum.EasingDirection.In)
-        tween(blur, 0.3, { Size = 0 }, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
-        statusOut.Completed:Wait()
+        contentOut.Completed:Wait()
 
         disconnectResponsiveScale()
         if blur.Parent then
