@@ -1,3 +1,5 @@
+<div align="center">
+
 # Austina
 
 ![Lua](https://img.shields.io/badge/Language-Lua-blue.svg?style=flat-square&logo=lua)
@@ -10,7 +12,6 @@ free roblox script hub developed by marcus.
 ---
 
 ### Gen Script
-
 
 ```lua
 loadstring(game:HttpGet("[https://raw.githubusercontent.com/Ic0u/austina/main/loader.lua](https://raw.githubusercontent.com/Ic0u/austina/main/loader.lua)"))().Start()
