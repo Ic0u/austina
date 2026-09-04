@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="./assets/austinas.png" alt="Austina logo" width="220">
+
 # Austina
 
 ![Lua](https://img.shields.io/badge/Language-Lua-blue.svg?style=flat-square&logo=lua)
