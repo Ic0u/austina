@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./assets/austinas.png" alt="Austina logo" width="100">
+<img src="./assets/austinas.png" alt="Austina logo" width="80">
 
 # Austina
 
