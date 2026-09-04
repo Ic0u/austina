@@ -1,6 +1,6 @@
 -- Austina
 
-local BASE_URL = "https://raw.githubusercontent.com/Ic0u/austina/main/"
+local BASE_URL = "https://raw.githubusercontent.com/Ic0u/austina/f3fe138/"
 
 local function loadRemoteModule(path)
     local fetched, source = pcall(game.HttpGet, game, BASE_URL .. path)
@@ -49,6 +49,8 @@ end)
 local AccentSoft = Color3.fromRGB(118, 194, 146)
 local AccentDeep = Color3.fromRGB(56, 138, 92)
 local MenuKey    = Enum.KeyCode.RightControl
+
+getgenv().UIColor["Logo Image"] = "rbxassetid://120653535861537"
 
 local Window = UILibrary.CreateMain({
     Name  = "Austina",
