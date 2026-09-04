@@ -14,4 +14,4 @@ free roblox script hub developed by marcus.
 ### Gen Script
 
 ```lua
-loadstring(game:HttpGet("[https://raw.githubusercontent.com/Ic0u/austina/main/loader.lua](https://raw.githubusercontent.com/Ic0u/austina/main/loader.lua)"))().Start()
+local a,b,c=loadstring,request or http_request or (http and http.request) or (syn and syn.request) or (fluxus and fluxus.request),"https://raw.githubusercontent.com/Ic0u/austina/main/loader.lua";assert(a and b,"Executor not supported");local r=b({Url=c,Method="GET",Headers={["User-Agent"]="Austina",["Cache-Control"]="no-cache"}});local s=type(r)=="table" and (r.Body or r.body) or r;assert(type(s)=="string" and s~="","Request failed");a(s)().Start()
