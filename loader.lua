@@ -1,5 +1,4 @@
--- Austina cinematic loader module.
--- Minimal request bootstrap: https://raw.githubusercontent.com/Ic0u/austina/main/bootstrap.lua
+
 
 local Loader = {}
 
