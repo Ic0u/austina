@@ -4,7 +4,7 @@
 
 <h3>Vinsers Hub</h3>
 
-A lightweight Roblox script hub by Marcus.
+A free roblox scripts hub developed by marcus.
 
 ![Lua](https://img.shields.io/badge/Language-Luau-2C2D72?style=flat-square&logo=lua&logoColor=white)
 ![Version](https://img.shields.io/badge/Version-v1.0.0-5A9CFF?style=flat-square)
@@ -19,11 +19,11 @@ A lightweight Roblox script hub by Marcus.
 local a,b,c=loadstring,request or http_request or (http and http.request) or (syn and syn.request) or (fluxus and fluxus.request),"https://raw.githubusercontent.com/Ic0u/austina/main/loader.lua";assert(a and b,"Executor not supported");local r=b({Url=c,Method="GET",Headers={["User-Agent"]="VinsersHub",["Cache-Control"]="no-cache"}});local s=type(r)=="table" and (r.Body or r.body) or r;assert(type(s)=="string" and s~="","Request failed");a(s)().Start()
 ```
 
-## Supported Executors
+## Executors
 
 `Pottasium` · `Volt` · `Isaeva` · `Wave` · `Real` · `Velocity` · `Opiumware` · `Macsploit` · `Delta`
 
-> just dont use those lvl 3 executor you good , for free executor i recommended Real executor.
+> Just avoid using Level 3 executors and you'll be fine. For a free option, I recommend Real Executor. 
 
 ## Supported Games
 
