@@ -21,18 +21,16 @@ local a,b,c=loadstring,request or http_request or (http and http.request) or (sy
 
 ## Supported Executors
 
-`Volt` · `Potassium` · `Synapse Z` · `Wave` · `Opiumware` · `MacSploit` · `Delta X`
+`Pottasium` · `Volt` · `Real` · `Delta` · `Opiumware` · `MacSploit` · `Iseava`
 
-> The loader requires `loadstring` and an HTTP request function. ESP features also require the Drawing API.
+> just dont use those lvl 3 executor you good
 
 ## Supported Games
 
 | Game | Place ID |
 | --- | ---: |
-| [Blox Fruits — First Sea](https://www.roblox.com/games/2753915549/) | `2753915549` |
-| [Blox Fruits — Second Sea](https://www.roblox.com/games/4442272183/) | `4442272183` |
-| [Blox Fruits — Third Sea](https://www.roblox.com/games/7449423635/) | `7449423635` |
-| Universal fallback | Any other place |
+| [Blox Fruits](https://www.roblox.com/games/2753915549/) | `2753915549` |
+| others  | universal scripts |
 
 <p align="center">
   <a href="https://discord.gg/r7E9j8h4w2">
