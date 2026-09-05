@@ -35,13 +35,13 @@ local cam = Workspace.CurrentCamera
 local WorldToViewportPoint = cam and cam.WorldToViewportPoint
 local globalConnections = {}
 local sharedEnvironment = getgenv and getgenv() or _G
-local renderBindName = "AustinaESPRender"
+local renderBindName = "VinsersHubESPRender"
 
-local previousESP = sharedEnvironment.AustinaESP
+local previousESP = sharedEnvironment.VinsersHubESP
 if previousESP and previousESP ~= ESP and previousESP.Destroy then
     pcall(previousESP.Destroy, previousESP)
 end
-sharedEnvironment.AustinaESP = ESP
+sharedEnvironment.VinsersHubESP = ESP
 
 local MAX_SKELETON_LINES = 14
 local R6_BONES = {
@@ -251,7 +251,7 @@ function boxBase:UpdateHighlight(color)
 
     if not self.Highlight then
         local highlight = Instance.new("Highlight")
-        highlight.Name = "AustinaChams"
+        highlight.Name = "VinsersHubChams"
         highlight.Adornee = self.Object
         highlight.Parent = self.Object
         self.Highlight = highlight
@@ -748,7 +748,7 @@ local function renderESP()
             local success, err = pcall(object.Update, object)
             if not success then
                 local objectName = object.Object and object.Object:GetFullName() or "custom object"
-                warn("[Austina ESP]", err, objectName)
+                warn("[Vinsers Hub ESP]", err, objectName)
             end
         end
     end
@@ -781,8 +781,8 @@ function ESP:Destroy()
     end
     globalConnections = {}
 
-    if sharedEnvironment.AustinaESP == self then
-        sharedEnvironment.AustinaESP = nil
+    if sharedEnvironment.VinsersHubESP == self then
+        sharedEnvironment.VinsersHubESP = nil
     end
 end
 

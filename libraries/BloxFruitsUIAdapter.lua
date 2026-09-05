@@ -1,5 +1,5 @@
 -- Compatibility adapter for legacy tab-style feature code. Controls are
--- rendered exclusively by Austina's shared UI library.
+-- rendered exclusively by Vinsers Hub's shared UI library.
 
 local Adapter = {}
 
@@ -139,7 +139,7 @@ function Adapter.Create(uiLibrary, options)
         local tab = {}
 
         function tab:Section(sectionName, side)
-            -- The legacy library used this argument for column placement. Austina's
+            -- The legacy library used this argument for column placement. Vinsers Hub's
             -- second CreateSection argument controls whether a section exists, so
             -- mapping "Left" to false silently removed half of the interface.
             return wrapSection(page.CreateSection(tostring(sectionName)))

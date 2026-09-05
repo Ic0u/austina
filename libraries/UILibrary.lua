@@ -37,12 +37,12 @@ local function CacheAsset(id)
     end
 
     local ok, result = pcall(function()
-        if not isfolder("Austina") then makefolder("Austina") end
-        if not isfolder("Austina/Assets") then makefolder("Austina/Assets") end
+        if not isfolder("Vinsers Hub") then makefolder("Vinsers Hub") end
+        if not isfolder("Vinsers Hub/Assets") then makefolder("Vinsers Hub/Assets") end
 
         -- Derive a deterministic filename from the asset id.
         local name = tostring(id):gsub("%W", "_") .. ".png"
-        local path = "Austina/Assets/" .. name
+        local path = "Vinsers Hub/Assets/" .. name
 
         if not isfile(path) then
             local numId = tostring(id):match("%d+")
@@ -85,9 +85,9 @@ local function RegistryKey(page, section, title)
     return tostring(page) .. "||" .. tostring(section) .. "||" .. tostring(title);
 end;
 local function BuildLibrary()
-    if getgenv().Tvk and gethui():FindFirstChild("Austina GUI") then
+    if getgenv().Tvk and gethui():FindFirstChild("Vinsers Hub GUI") then
         for L_635, L_636 in ipairs(gethui():GetChildren()) do
-            if L_636.Name == "Austina GUI" then
+            if L_636.Name == "Vinsers Hub GUI" then
                 L_636:Destroy();
             end;
         end;
@@ -140,20 +140,20 @@ local function BuildLibrary()
     local L_656 = "!CustomUI.json";
     SaveCustomUISettings = function()
         local L_657 = cloneref(game:GetService("HttpService"));
-        if not isfolder("Austina") then
-            makefolder("Austina");
+        if not isfolder("Vinsers Hub") then
+            makefolder("Vinsers Hub");
         end;
-        writefile("Austina/" .. L_656, L_657:JSONEncode(CorrectTable(L_642)));
+        writefile("Vinsers Hub/" .. L_656, L_657:JSONEncode(CorrectTable(L_642)));
         return ;
     end;
     ReadCustomUISetting = function()
         local L_662, L_663 = pcall(function()
             local L_658 = cloneref(game:GetService("HttpService"));
-            if not isfolder("Austina") then
-                makefolder("Austina");
+            if not isfolder("Vinsers Hub") then
+                makefolder("Vinsers Hub");
             end;
 
-            local L_659 = L_658:JSONDecode(readfile("Austina/" .. L_656));
+            local L_659 = L_658:JSONDecode(readfile("Vinsers Hub/" .. L_656));
             for L_660, L_661 in pairs(L_659) do
                 if not (function()
                     if L_661.Color == nil then
@@ -188,9 +188,9 @@ local function BuildLibrary()
     end;
     local ConfigSystem = {};
 
-    local ConfigFolder = "Austina/Configs";
+    local ConfigFolder = "Vinsers Hub/Configs";
     local function SetConfigFolder(path)
-        ConfigFolder = tostring(path or "Austina/Configs");
+        ConfigFolder = tostring(path or "Vinsers Hub/Configs");
         return ConfigFolder;
     end;
     local function GetConfigFolder()
@@ -198,8 +198,8 @@ local function BuildLibrary()
     end;
 
     local L_666 = function()
-        if not isfolder("Austina") then
-            makefolder("Austina");
+        if not isfolder("Vinsers Hub") then
+            makefolder("Vinsers Hub");
         end;
         if HasFileSystem and not isfolder(ConfigFolder) then
             makefolder(ConfigFolder);
@@ -369,7 +369,7 @@ local function BuildLibrary()
         end);
         return L_719, L_720;
     end;
-    getgenv().AustinaConfig = ConfigSystem;
+    getgenv().VinsersHubConfig = ConfigSystem;
     if not getgenv().Chon then
 
         L_642 = DCorrectTable(ReadCustomUISetting());
@@ -390,7 +390,7 @@ local function BuildLibrary()
     local L_729 = setmetatable({}, {
         __newindex = function(L_723, L_724, L_725)
             if L_724 == nil then
-                warn("[Austina UI] UIColor __newindex got nil key, ignoring.");
+                warn("[Vinsers Hub UI] UIColor __newindex got nil key, ignoring.");
                 return ;
             end;
             rawset(ThemeDefaultDark, L_724, L_725);
@@ -629,7 +629,7 @@ local function BuildLibrary()
     end;
     Internal.Gui = Instance.new("ScreenGui");
     Internal.Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling;
-    Internal.Gui.Name = "Austina GUI";
+    Internal.Gui.Name = "Vinsers Hub GUI";
     getgenv().ReadyForGuiLoaded = false;
     spawn(function()
         Internal.Gui.Enabled = false;
@@ -648,7 +648,7 @@ local function BuildLibrary()
     end);
     Internal.NotiGui = Instance.new("ScreenGui");
     Internal.NotiGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling;
-    Internal.NotiGui.Name = "Austina Notification";
+    Internal.NotiGui.Name = "Vinsers Hub Notification";
     local L_739 = Instance.new("Frame");
     local L_740 = Instance.new("UIListLayout");
     L_739.Name = "NotiContainer";
@@ -725,9 +725,9 @@ local function BuildLibrary()
         L_812.CornerRadius = UDim.new(1, 0);
         L_812.Name = "RuafimgCorner";
         L_812.Parent = L_811;
-        L_813.Text = "<font color=\"rgb(" .. (tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[1]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[2]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[3])) .. ")\">" .. (getgenv().HubName or "Austina") .. "</font> " .. getgenv().TitleNameNoti;
+        L_813.Text = "<font color=\"rgb(" .. (tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[1]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[2]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[3])) .. ")\">" .. (getgenv().HubName or "Vinsers Hub") .. "</font> " .. getgenv().TitleNameNoti;
         table.insert(ThemeListeners["Title Text Color"], function()
-            L_813.Text = "<font color=\"rgb(" .. (tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[1]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[2]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[3])) .. ")\">" .. (getgenv().HubName or "Austina") .. "</font> " .. getgenv().TitleNameNoti;
+            L_813.Text = "<font color=\"rgb(" .. (tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[1]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[2]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[3])) .. ")\">" .. (getgenv().HubName or "Vinsers Hub") .. "</font> " .. getgenv().TitleNameNoti;
             return ;
         end);
         L_813.Name = "TextLabelNoti";
@@ -826,12 +826,12 @@ local function BuildLibrary()
         return ;
     end;
     SeaUI.CreateMain = function(L_819)
-        local L_820 = tostring(L_819.Title) or "Austina";
-        -- ADDITION: the brand word beside the logo was a hardcoded "Austina"
+        local L_820 = tostring(L_819.Title) or "Vinsers Hub";
+        -- ADDITION: the brand word beside the logo is driven by this field.
         -- string literal in five places. It is now driven by this field.
         -- Title = the sidebar header. Name = the brand. Desc = the text
         -- printed after the brand (version string, sea name, etc).
-        getgenv().HubName = L_819.Name or getgenv().HubName or "Austina";
+        getgenv().HubName = L_819.Name or getgenv().HubName or "Vinsers Hub";
         getgenv().MainDesc = L_819.Desc or "";
         local L_821 = false;
         cac = false;
@@ -921,10 +921,10 @@ local function BuildLibrary()
         end);
         Internal.ReloadMain = function(L_853)
             L_834.ImageColor3 = getgenv().UIColor["Title Text Color"];
-            L_838.Text = "<font color=\"rgb(" .. (tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[1]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[2]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[3])) .. ")\">" .. (getgenv().HubName or "Austina") .. "</font> " .. getgenv().MainDesc;
+            L_838.Text = "<font color=\"rgb(" .. (tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[1]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[2]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[3])) .. ")\">" .. (getgenv().HubName or "Vinsers Hub") .. "</font> " .. getgenv().MainDesc;
             table.insert(ThemeListeners["Title Text Color"], function()
                 L_834.ImageColor3 = getgenv().UIColor["Title Text Color"];
-                L_838.Text = "<font color=\"rgb(" .. (tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[1]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[2]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[3])) .. ")\">" .. (getgenv().HubName or "Austina") .. "</font> " .. getgenv().MainDesc;
+                L_838.Text = "<font color=\"rgb(" .. (tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[1]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[2]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[3])) .. ")\">" .. (getgenv().HubName or "Vinsers Hub") .. "</font> " .. getgenv().MainDesc;
                 return ;
             end);
             local L_854 = nil;
@@ -976,10 +976,10 @@ local function BuildLibrary()
             return ;
         end;
         L_834.ImageColor3 = getgenv().UIColor["Title Text Color"];
-        L_838.Text = "<font color=\"rgb(" .. (tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[1]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[2]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[3])) .. ")\">" .. (getgenv().HubName or "Austina") .. "</font> " .. getgenv().MainDesc;
+        L_838.Text = "<font color=\"rgb(" .. (tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[1]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[2]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[3])) .. ")\">" .. (getgenv().HubName or "Vinsers Hub") .. "</font> " .. getgenv().MainDesc;
         table.insert(ThemeListeners["Title Text Color"], function()
             L_834.ImageColor3 = getgenv().UIColor["Title Text Color"];
-            L_838.Text = "<font color=\"rgb(" .. (tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[1]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[2]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[3])) .. ")\">" .. (getgenv().HubName or "Austina") .. "</font> " .. getgenv().MainDesc;
+            L_838.Text = "<font color=\"rgb(" .. (tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[1]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[2]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[3])) .. ")\">" .. (getgenv().HubName or "Vinsers Hub") .. "</font> " .. getgenv().MainDesc;
             return ;
         end);
         local L_860 = nil;
@@ -1089,9 +1089,9 @@ local function BuildLibrary()
             L_838.TextColor3 = getgenv().UIColor["GUI Text Color"];
             return ;
         end);
-        L_838.Text = "<font color=\"rgb(" .. (tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[1]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[2]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[3])) .. ")\">" .. (getgenv().HubName or "Austina") .. "</font> " .. getgenv().MainDesc;
+        L_838.Text = "<font color=\"rgb(" .. (tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[1]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[2]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[3])) .. ")\">" .. (getgenv().HubName or "Vinsers Hub") .. "</font> " .. getgenv().MainDesc;
         table.insert(ThemeListeners["Title Text Color"], function()
-            L_838.Text = "<font color=\"rgb(" .. (tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[1]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[2]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[3])) .. ")\">" .. (getgenv().HubName or "Austina") .. "</font> " .. getgenv().MainDesc;
+            L_838.Text = "<font color=\"rgb(" .. (tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[1]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[2]) .. "," .. tostring(Internal.Getcolor(getgenv().UIColor["Title Text Color"])[3])) .. ")\">" .. (getgenv().HubName or "Vinsers Hub") .. "</font> " .. getgenv().MainDesc;
             return ;
         end);
         L_846.Name = "SettionMain";
@@ -4960,7 +4960,7 @@ local function BuildLibrary()
     -- listener, which is what rebuilds the rich-text string. Cheaper than a
     -- full ReloadMain, which tears the whole window down.
     SeaUI.SetName = function(name)
-        getgenv().HubName = tostring(name or "Austina");
+        getgenv().HubName = tostring(name or "Vinsers Hub");
         for _, fn in ipairs(ThemeListeners["Title Text Color"] or {}) do
             pcall(fn);
         end;
