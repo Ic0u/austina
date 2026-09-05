@@ -1,70 +1,22 @@
 --[[
     UILIbrary.lua
     ---------------------------------------------------------------------------
-    A standalone extraction of the "Austina" Roblox UI library.
-
-    This file is NOT a reimplementation. Every frame, colour, dimension, tween
-    and event handler below is the original implementation lifted out of the
-    decompiled source. Only three classes of change were made:
-
-      1. Synapse-X decompiler control-flow guards were removed
-         (`if L_506(8065) ~= 26545 then while true do end end` and friends).
-      2. Constants the decompiler lost were restored (see notes below).
-      3. Non-UI code was deleted.
-
-    Restored constants
-      L_32 -> "Frame"        proven from usage (Instance.new + Size/AnchorPoint/
-                             ZIndex, and `FindFirstChild(L_32)` followed by
-                             `.Frame` on the next line of the source).
-      L_34 -> "Text Color"   INFERRED. It is a theme-table key used only as a
-                             TextColor3 source. The original string literal is
-                             not recoverable from the decompilation. The name is
-                             used consistently, so behaviour is correct, but if
-                             you diff against another Feral build this key may
-                             have had a different label.
-      L_35 -> true           used as a truthy constant gate; restored by
-                             deleting the gate.
-      L_36 -> HasFileSystem  gated every isfile/writefile call. It was undefined
-                             in the decompilation, which silently disabled all
-                             persistence. Restored as a capability check.
-
-    Usage:
-      local SeaUI = loadstring(game:HttpGet("RAW_URL"))()
-      local Window = SeaUI.CreateMain({ Title = "My Hub", Desc = "v1.0" })
-      local Page   = Window.CreatePage({ Page_Name = "Main", Page_Title = "Main" })
-      local Sect   = Page.CreateSection("Combat", false)
-      Sect.CreateToggle({ Title = "Aimbot", Default = false }, function(v) end)
+    Sea Hub UI Lib reverse from feral gpo source leak using claude fable 5.1 
 --]]
 
--- getgenv() is the executor global-table accessor. The original library stores
--- the live theme in getgenv().UIColor and several UI flags alongside it; that
--- relationship is preserved. Fall back to _G outside an executor so the file
--- at least loads.
+
 local getgenv = getgenv or function() return _G end
 
--- Anti-detection shims.
--- cloneref: creates a unique reference to services so that anti-cheat
--- reference-equality checks (e.g. rawequal(ref, game:GetService(...)))
--- cannot match our cached handles.
--- gethui: returns a hidden UI container that is NOT a child of CoreGui,
--- making the ScreenGui invisible to scripts scanning CoreGui:GetChildren().
 local cloneref = cloneref or function(o) return o end
 local gethui   = gethui   or function() return cloneref(game:GetService("CoreGui")) end
 
--- Executor filesystem capability. Original variable: L_36.
 local HasFileSystem =
     type(rawget(getfenv(0), "isfile"))     == "function" and
     type(rawget(getfenv(0), "writefile"))  == "function" and
     type(rawget(getfenv(0), "isfolder"))   == "function" and
     type(rawget(getfenv(0), "makefolder")) == "function"
 
--- CreateToggle supports an optional `Requirements` list which renders a chip
--- row under the toggle and greys it out until every requirement passes. In the
--- original script the checker was wired to game-specific ability presets. The
--- UI is preserved; the checker is left empty and pluggable so the library stays
--- standalone. Register your own with RequirementsTracker:AddPreset(name, fn).
--- Executor asset/request shims. The original called syn.request and
--- getsynasset directly (Synapse X only). Same behaviour, wider support.
+
 local HttpRequest =
     (syn and syn.request)
     or (http and http.request)
@@ -72,15 +24,7 @@ local HttpRequest =
     or request
 local GetCustomAsset = getcustomasset or getsynasset or function(p) return "rbxasset://" .. tostring(p) end
 
--- ---------------------------------------------------------------------------
--- Asset caching (ANTI-DETECTION)
---
--- Every rbxassetid:// in the original source is a ContentProvider fingerprint.
--- Anti-cheats call ContentProvider:GetAssetIdsLoaded() or hook PreloadAsync to
--- see which asset IDs a script has touched.  CacheAsset downloads each asset
--- once to the local filesystem and returns a getcustomasset path, so the
--- Roblox CDN / ContentProvider never sees the original ID.
--- ---------------------------------------------------------------------------
+
 local _AssetCache = {}
 local function CacheAsset(id)
     if not id or id == "" then return "" end
