@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./assets/vinershub.png" alt="Vinsers Hub logo" width="90">
+<img src="./assets/vinershub.png" alt="Vinsers Hub logo" width="96">
 
 <h3>Vinsers Hub</h3>
 
