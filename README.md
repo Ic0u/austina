@@ -2,7 +2,7 @@
 
 <img src="./assets/austinas.png" alt="Austina logo" width="80">
 
-# Austina
+# Vinsers Hub
 
 ![Lua](https://img.shields.io/badge/Language-Lua-blue.svg?style=flat-square&logo=lua)
 ![Version](https://img.shields.io/badge/Version-v1.0.0-green.svg?style=flat-square)
