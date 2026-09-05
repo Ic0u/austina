@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./assets/austinas.png" alt="Austina logo" width="80">
+<img src="./assets/vinershub.png" alt="Vinsers Hub logo" width="80">
 
 # Vinsers Hub
 
