@@ -10,8 +10,8 @@ local Workspace = game:GetService("Workspace")
 
 local BASE_URL = "https://raw.githubusercontent.com/Ic0u/austina/main/"
 local UNIVERSAL_URL = "https://raw.githubusercontent.com/Ic0u/austina/b1edf1e/scripts/Universal.lua"
-local GUI_NAME = "AustinaLoaderGui"
-local BLUR_NAME = "AustinaLoaderBlur"
+local GUI_NAME = "VinsersHubLoaderGui"
+local BLUR_NAME = "VinsersHubLoaderBlur"
 local DEFAULT_GAMES = {
     ["2753915549"] = "Blox Fruits - First Sea",
     ["4442272183"] = "Blox Fruits - Second Sea",
@@ -254,7 +254,7 @@ local function createLoaderContent(parent)
     title.AnchorPoint = Vector2.new(0.5, 0.5)
     title.BackgroundTransparency = 1
     title.Position = UDim2.fromScale(0.5, 0.36)
-    title.Size = UDim2.fromOffset(380, 64)
+    title.Size = UDim2.fromOffset(460, 64)
     title.Parent = container
 
     local titleScale = Instance.new("UIScale")
@@ -264,60 +264,63 @@ local function createLoaderContent(parent)
     local titleLayout = Instance.new("UIListLayout")
     titleLayout.FillDirection = Enum.FillDirection.Horizontal
     titleLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    titleLayout.Padding = UDim.new(0, 9)
+    titleLayout.Padding = UDim.new(0, 6)
     titleLayout.SortOrder = Enum.SortOrder.LayoutOrder
     titleLayout.VerticalAlignment = Enum.VerticalAlignment.Center
     titleLayout.Parent = title
 
     local letterViews = {}
-    local letterRotations = { -7, 4, -3, 5, -4, 3, -5 }
-    for index, character in ipairs({ "A", "U", "S", "T", "I", "N", "A" }) do
+    local brandLetters = { "V", "I", "N", "S", "E", "R", "S", " ", "H", "U", "B" }
+    local letterRotations = { -7, 4, -3, 5, -4, 3, -5, 0, 4, -3, 5 }
+    for index, character in ipairs(brandLetters) do
         local slot = Instance.new("Frame")
         slot.Name = "LetterSlot" .. index
         slot.BackgroundTransparency = 1
         slot.LayoutOrder = index
-        slot.Size = UDim2.fromOffset(40, 60)
+        slot.Size = UDim2.fromOffset(character == " " and 12 or 34, 60)
         slot.Parent = title
 
-        local letter = Instance.new("TextLabel")
-        letter.Name = "Letter" .. index
-        letter.BackgroundTransparency = 1
-        letter.Font = Enum.Font.FredokaOne
-        letter.Position = UDim2.fromOffset(0, 24)
-        letter.Rotation = letterRotations[index]
-        letter.Size = UDim2.fromScale(1, 1)
-        letter.Text = character
-        letter.TextColor3 = Color3.fromRGB(230, 255, 237)
-        letter.TextSize = 42
-        letter.TextTransparency = 1
-        letter.Parent = slot
+        if character ~= " " then
+            local letter = Instance.new("TextLabel")
+            letter.Name = "Letter" .. index
+            letter.BackgroundTransparency = 1
+            letter.Font = Enum.Font.FredokaOne
+            letter.Position = UDim2.fromOffset(0, 24)
+            letter.Rotation = letterRotations[index]
+            letter.Size = UDim2.fromScale(1, 1)
+            letter.Text = character
+            letter.TextColor3 = Color3.fromRGB(231, 242, 255)
+            letter.TextSize = 38
+            letter.TextTransparency = 1
+            letter.Parent = slot
 
-        local letterStroke = Instance.new("UIStroke")
-        letterStroke.Color = Color3.fromRGB(70, 157, 101)
-        letterStroke.Thickness = 1.25
-        letterStroke.Transparency = 1
-        letterStroke.Parent = letter
+            local letterStroke = Instance.new("UIStroke")
+            letterStroke.Color = Color3.fromRGB(49, 106, 190)
+            letterStroke.Thickness = 1.25
+            letterStroke.Transparency = 1
+            letterStroke.Parent = letter
 
-        local letterGradient = Instance.new("UIGradient")
-        letterGradient.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(115, 214, 143)),
-            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(232, 255, 237)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(87, 180, 116)),
-        })
-        letterGradient.Offset = Vector2.new(-0.22, 0)
-        letterGradient.Rotation = 90
-        letterGradient.Parent = letter
+            local letterGradient = Instance.new("UIGradient")
+            letterGradient.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(92, 155, 255)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(236, 245, 255)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(67, 129, 225)),
+            })
+            letterGradient.Offset = Vector2.new(-0.22, 0)
+            letterGradient.Rotation = 90
+            letterGradient.Parent = letter
 
-        local letterScale = Instance.new("UIScale")
-        letterScale.Scale = 0.72
-        letterScale.Parent = letter
+            local letterScale = Instance.new("UIScale")
+            letterScale.Scale = 0.72
+            letterScale.Parent = letter
 
-        table.insert(letterViews, {
-            Label = letter,
-            Scale = letterScale,
-            Stroke = letterStroke,
-            Gradient = letterGradient,
-        })
+            table.insert(letterViews, {
+                Label = letter,
+                Scale = letterScale,
+                Stroke = letterStroke,
+                Gradient = letterGradient,
+            })
+        end
     end
 
     local progressTrack = Instance.new("Frame")
@@ -336,7 +339,7 @@ local function createLoaderContent(parent)
 
     local progressFill = Instance.new("Frame")
     progressFill.Name = "ProgressFill"
-    progressFill.BackgroundColor3 = Color3.fromRGB(112, 211, 141)
+    progressFill.BackgroundColor3 = Color3.fromRGB(90, 160, 255)
     progressFill.BackgroundTransparency = 1
     progressFill.BorderSizePixel = 0
     progressFill.Size = UDim2.fromScale(0, 1)
@@ -348,9 +351,9 @@ local function createLoaderContent(parent)
 
     local fillGradient = Instance.new("UIGradient")
     fillGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(67, 159, 98)),
-        ColorSequenceKeypoint.new(0.55, Color3.fromRGB(221, 255, 230)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(82, 184, 116)),
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(54, 117, 211)),
+        ColorSequenceKeypoint.new(0.55, Color3.fromRGB(225, 241, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(76, 145, 240)),
     })
     fillGradient.Offset = Vector2.new(-1, 0)
     fillGradient.Parent = progressFill
@@ -566,7 +569,7 @@ function Loader.Start(onComplete)
         task.spawn(function()
             local ok, err = pcall(callback)
             if not ok then
-                warn("Austina loader callback failed:", err)
+                warn("Vinsers Hub loader callback failed:", err)
             end
         end)
     end)

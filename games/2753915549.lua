@@ -1,8 +1,8 @@
--- Austina Blox Fruits compatibility port.
+-- Vinsers Hub Blox Fruits compatibility port.
 -- The attached script is treated as source material only. Its custom UI,
 -- promotional clipboard action, and third-party remote loader are excluded.
 
-local MODULE_BASE_URL = "https://raw.githubusercontent.com/Ic0u/austina/f3fe138/"
+local MODULE_BASE_URL = "https://raw.githubusercontent.com/Ic0u/austina/31447f2/"
 local SUPPORTED_PLACES = {
     [2753915549] = true,
     [4442272183] = true,
@@ -10,34 +10,41 @@ local SUPPORTED_PLACES = {
 }
 
 if not SUPPORTED_PLACES[game.PlaceId] then
-    warn("Austina Blox Fruits module was loaded in an unsupported place")
+    warn("Vinsers Hub Blox Fruits module was loaded in an unsupported place")
     return
 end
 
 local PlayersService = game:GetService("Players")
 local LocalPlayer = PlayersService.LocalPlayer or PlayersService.PlayerAdded:Wait()
+local GameName = "Blox Fruits"
+pcall(function()
+    local productInfo = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
+    if type(productInfo) == "table" and type(productInfo.Name) == "string" and productInfo.Name ~= "" then
+        GameName = productInfo.Name
+    end
+end)
 
 local environment = (getgenv and getgenv()) or _G
-if environment.AustinaBloxFruitsLoaded then
-    warn("Austina Blox Fruits is already running")
+if environment.VinsersHubBloxFruitsLoaded then
+    warn("Vinsers Hub Blox Fruits is already running")
     return
 end
-environment.AustinaBloxFruitsLoaded = true
+environment.VinsersHubBloxFruitsLoaded = true
 
 local function loadRemoteModule(path)
     local fetched, source = pcall(game.HttpGet, game, MODULE_BASE_URL .. path)
     if not fetched or type(source) ~= "string" or source == "" then
-        error("Austina could not download " .. path)
+        error("Vinsers Hub could not download " .. path)
     end
 
     local chunk, compileError = loadstring(source)
     if not chunk then
-        error("Austina could not compile " .. path .. ": " .. tostring(compileError))
+        error("Vinsers Hub could not compile " .. path .. ": " .. tostring(compileError))
     end
 
     local ok, result = pcall(chunk)
     if not ok then
-        error("Austina could not initialize " .. path .. ": " .. tostring(result))
+        error("Vinsers Hub could not initialize " .. path .. ": " .. tostring(result))
     end
 
     return result
@@ -47,25 +54,7 @@ local UILibrary = loadRemoteModule("libraries/UILibrary.lua")
 local UIAdapter = loadRemoteModule("libraries/BloxFruitsUIAdapter.lua")
 local ESP = loadRemoteModule("libraries/ESPLibrary.lua")
 
-UILibrary.SetConfigFolder("Austina/BloxFruits")
-
-local AccentSoft = Color3.fromRGB(118, 194, 146)
-local AccentDeep = Color3.fromRGB(56, 138, 92)
-
-for _, key in ipairs({
-    "Title Text Color", "Page Selected Color", "Section Text Color",
-    "Label Color", "Dropdown Selected Color", "Search Icon Highlight Color",
-}) do
-    environment.UIColor[key] = AccentSoft
-end
-
-for _, key in ipairs({
-    "Section Underline Color", "Toggle Border Color", "Toggle Checked Color",
-    "Button Color", "Textbox Highlight Color", "Box Highlight Color",
-    "Slider Highlight Color",
-}) do
-    environment.UIColor[key] = AccentDeep
-end
+UILibrary.SetConfigFolder("Vinsers Hub/BloxFruits")
 
 environment.Team = environment.Team or "Pirates"
 _G.FastAttack = true
@@ -86,7 +75,7 @@ local function initializeFastAttack()
     local characters = workspace:WaitForChild("Characters", 10)
 
     if not player or not registerAttack or not registerHit or not enemies or not characters then
-        warn("Austina fast attack is unavailable in this game build")
+        warn("Vinsers Hub fast attack is unavailable in this game build")
         return
     end
 
@@ -141,7 +130,7 @@ local function initializeFastAttack()
 
     environment.rz_FastAttack = fastAttack
     task.spawn(function()
-        while environment.AustinaBloxFruitsLoaded do
+        while environment.VinsersHubBloxFruitsLoaded do
             if _G.FastAttack then
                 fastAttack:AttackNearest()
             end
@@ -2428,10 +2417,10 @@ spawn(function()
     while wait() do
         pcall(function()
             if NoClip == true then
-                if not plr.Character.Head:FindFirstChild("AustinaClipVelocity") then
+                if not plr.Character.Head:FindFirstChild("VinsersHubClipVelocity") then
                     local Bucaccho = Instance.new("BodyVelocity", plr.Character.Head)
                     Bucaccho.P = 1500
-                    Bucaccho.Name = "AustinaClipVelocity"
+                    Bucaccho.Name = "VinsersHubClipVelocity"
                     Bucaccho.MaxForce = Vector3.new(0, 100000, 0)
                     Bucaccho.Velocity = Vector3.new(0, 0, 0)
                 end
@@ -2441,8 +2430,8 @@ spawn(function()
                     end
                 end
             else
-                if plr.Character.Head:FindFirstChild("AustinaClipVelocity") then
-                    plr.Character.Head:FindFirstChild("AustinaClipVelocity"):Destroy()
+                if plr.Character.Head:FindFirstChild("VinsersHubClipVelocity") then
+                    plr.Character.Head:FindFirstChild("VinsersHubClipVelocity"):Destroy()
                 end
             end
         end)
@@ -2963,9 +2952,9 @@ function CheckItemBPCRBPCR(name)
 end
 
 local Window = UIAdapter.Create(UILibrary, {
-    Name = "Austina",
-    Title = "Blox Fruits",
-    Desc = "Blox Fruits",
+    Name = "Vinsers Hub",
+    Title = GameName,
+    Desc = "",
 })
 
 local Main = Window:Tab("General","14477284625")
@@ -3220,7 +3209,7 @@ AutoFarm:Dropdown("Select Weapons", { "Melee", "Sword", "Gun", "Blox Fruit" }, {
 end)
 
 task.spawn(function()
-    while environment.AustinaBloxFruitsLoaded do
+    while environment.VinsersHubBloxFruitsLoaded do
         local tool = resolveFarmTool()
         if tool then
             _G.SelectWeapon = tool.Name
@@ -3240,7 +3229,7 @@ AutoFarm:Toggle("Auto Farm Level", false, function(value)
 end)
 
 task.spawn(function()
-    while environment.AustinaBloxFruitsLoaded do
+    while environment.VinsersHubBloxFruitsLoaded do
         if _G.AutoFarm then
             local ok, farmError = pcall(runAutoFarmStep)
             if not ok then
@@ -8180,7 +8169,7 @@ Trailers:Toggle("Skill C",false, function(Value)
         end
     end)
 
-    ESP.Color = AccentSoft
+    ESP.Color = environment.UIColor["Title Text Color"]
     ESP:Toggle(false)
 
     Espbruh:Toggle("Enable Player ESP", false, function(value)

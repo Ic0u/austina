@@ -1,6 +1,6 @@
--- Austina
+-- Vinsers Hub
 
-local BASE_URL = "https://raw.githubusercontent.com/Ic0u/austina/f3fe138/"
+local BASE_URL = "https://raw.githubusercontent.com/Ic0u/austina/31447f2/"
 
 local function loadRemoteModule(path)
     local fetched, source = pcall(game.HttpGet, game, BASE_URL .. path)
@@ -23,7 +23,7 @@ end
 
 local UILibrary, uiError = loadRemoteModule("libraries/UILibrary.lua")
 if not UILibrary then
-    error("Austina UI library failed: " .. tostring(uiError))
+    error("Vinsers Hub UI library failed: " .. tostring(uiError))
 end
 
 local ESP, espError = loadRemoteModule("libraries/ESPLibrary.lua")
@@ -42,52 +42,27 @@ local LocalPlayer      = Players.LocalPlayer or Players.PlayerAdded:Wait()
 
 local GameName = "Roblox"
 pcall(function()
-    GameName = game:GetService("MarketplaceService")
-        :GetProductInfo(game.PlaceId).Name
+    local productInfo = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
+    if type(productInfo) == "table" and type(productInfo.Name) == "string" and productInfo.Name ~= "" then
+        GameName = productInfo.Name
+    end
 end)
 
-local AccentSoft = Color3.fromRGB(118, 194, 146)
-local AccentDeep = Color3.fromRGB(56, 138, 92)
-local MenuKey    = Enum.KeyCode.RightControl
-
-getgenv().UIColor["Logo Image"] = "rbxassetid://120653535861537"
+local MenuKey = Enum.KeyCode.RightControl
 
 local Window = UILibrary.CreateMain({
-    Name  = "Austina",
-    Title = "Universal",
-    Desc  = "Universal",
+    Name  = "Vinsers Hub",
+    Title = GameName,
+    Desc  = "",
 })
 
-UILibrary.SetConfigFolder("Austina/Configs")
+UILibrary.SetConfigFolder("Vinsers Hub/Configs")
 
 -- the library already prefixes every notification with the hub name,
 -- so Title here is the subject only
 local function notify(title, desc, time)
     UILibrary.CreateNoti({ Title = title, Desc = desc, ShowTime = time or 4 })
 end
-
-for _, key in ipairs({
-    "Title Text Color", "Page Selected Color", "Section Text Color",
-    "Label Color", "Dropdown Selected Color", "Search Icon Highlight Color",
-}) do
-    getgenv().UIColor[key] = AccentSoft
-end
-
-for _, key in ipairs({
-    "Section Underline Color", "Toggle Border Color", "Toggle Checked Color",
-    "Button Color", "Textbox Highlight Color", "Box Highlight Color",
-    "Slider Highlight Color",
-}) do
-    getgenv().UIColor[key] = AccentDeep
-end
-
-getgenv().UIColor["Background Main Color"] = Color3.fromRGB(20, 20, 20)
-getgenv().UIColor["Background 1 Color"]    = Color3.fromRGB(30, 30, 30)
-getgenv().UIColor["Background 2 Color"]    = Color3.fromRGB(45, 45, 45)
-getgenv().UIColor["Background 3 Color"]    = Color3.fromRGB(25, 25, 25)
-getgenv().UIColor["Slider Line Color"]     = Color3.fromRGB(60, 60, 60)
-getgenv().UIColor["Toggle Desc Color"]     = Color3.fromRGB(150, 150, 150)
-getgenv().UIColor["Border Color"]          = Color3.fromRGB(40, 40, 40)
 
 local LocalPlayerPage = Window.CreatePage({ Page_Name = "LocalPlayer", Page_Title = "LocalPlayer" })
 local VisualPage      = Window.CreatePage({ Page_Name = "Visual",      Page_Title = "Visual" })
@@ -175,8 +150,8 @@ local function stopFly()
     local root = character and character:FindFirstChild("HumanoidRootPart")
 
     if root then
-        local velocity = root:FindFirstChild("AustinaFlyVelocity")
-        local gyro = root:FindFirstChild("AustinaFlyGyro")
+        local velocity = root:FindFirstChild("VinsersHubFlyVelocity")
+        local gyro = root:FindFirstChild("VinsersHubFlyGyro")
         if velocity then velocity:Destroy() end
         if gyro then gyro:Destroy() end
     end
@@ -195,19 +170,19 @@ local function updateFly(character, humanoid)
         return
     end
 
-    local velocity = root:FindFirstChild("AustinaFlyVelocity")
+    local velocity = root:FindFirstChild("VinsersHubFlyVelocity")
     if not velocity then
         velocity = Instance.new("BodyVelocity")
-        velocity.Name = "AustinaFlyVelocity"
+        velocity.Name = "VinsersHubFlyVelocity"
         velocity.MaxForce = Vector3.new(1000000, 1000000, 1000000)
         velocity.P = 1250
         velocity.Parent = root
     end
 
-    local gyro = root:FindFirstChild("AustinaFlyGyro")
+    local gyro = root:FindFirstChild("VinsersHubFlyGyro")
     if not gyro then
         gyro = Instance.new("BodyGyro")
-        gyro.Name = "AustinaFlyGyro"
+        gyro.Name = "VinsersHubFlyGyro"
         gyro.MaxTorque = Vector3.new(1000000, 1000000, 1000000)
         gyro.P = 3000
         gyro.D = 100
@@ -415,7 +390,7 @@ end)
 local PlayerESP = VisualPage.CreateSection("Player ESP")
 
 if ESP then
-    ESP.Color = AccentSoft
+    ESP.Color = getgenv().UIColor["Title Text Color"]
     ESP:Toggle(false)
 
     PlayerESP.CreateToggle({
@@ -1294,7 +1269,7 @@ pcall(function()
         or "Unknown"
 end)
 
-About.CreateLabel({ Title = "Austina  v0.1a" })
+About.CreateLabel({ Title = "Vinsers Hub  v0.1a" })
 About.CreateLabel({ Title = "Game: " .. GameName })
 About.CreateLabel({ Title = "Place Id: " .. tostring(game.PlaceId) })
 About.CreateLabel({ Title = "Executor: " .. tostring(executorName) })
