@@ -2,7 +2,7 @@
 -- The attached script is treated as source material only. Its custom UI,
 -- promotional clipboard action, and third-party remote loader are excluded.
 
-local MODULE_BASE_URL = "https://raw.githubusercontent.com/Ic0u/austina/31447f2/"
+local MODULE_BASE_URL = "https://raw.githubusercontent.com/Ic0u/austina/main/"
 local SUPPORTED_PLACES = {
     [2753915549] = true,
     [4442272183] = true,

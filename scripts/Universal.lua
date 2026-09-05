@@ -1,6 +1,6 @@
 -- Vinsers Hub
 
-local BASE_URL = "https://raw.githubusercontent.com/Ic0u/austina/31447f2/"
+local BASE_URL = "https://raw.githubusercontent.com/Ic0u/austina/main/"
 
 local function loadRemoteModule(path)
     local fetched, source = pcall(game.HttpGet, game, BASE_URL .. path)
