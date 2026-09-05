@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local Workspace = game:GetService("Workspace")
 
 local BASE_URL = "https://raw.githubusercontent.com/Ic0u/austina/main/"
-local UNIVERSAL_URL = "https://raw.githubusercontent.com/Ic0u/austina/b1edf1e/scripts/Universal.lua"
+local UNIVERSAL_URL = "https://raw.githubusercontent.com/Ic0u/austina/5ee43cb/scripts/Universal.lua"
 local GUI_NAME = "VinsersHubLoaderGui"
 local BLUR_NAME = "VinsersHubLoaderBlur"
 local DEFAULT_GAMES = {
