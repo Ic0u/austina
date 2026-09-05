@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="./assets/vinershub.png" alt="Vinsers Hub logo" width="100">
+<img src="./assets/vinershub.png" alt="Vinsers Hub logo" width="220">
 
-# Vinsers Hub
+<h3>Vinsers Hub</h3>
 
 A lightweight Roblox script hub by Marcus.
 
@@ -34,10 +34,8 @@ local a,b,c=loadstring,request or http_request or (http and http.request) or (sy
 | [Blox Fruits — Third Sea](https://www.roblox.com/games/7449423635/) | `7449423635` |
 | Universal fallback | Any other place |
 
-## Discord
-
-<div align="center">
-
-[![Join Discord](https://img.shields.io/badge/Join_Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/r7E9j8h4w2)
-
-</div>
+<p align="center">
+  <a href="https://discord.gg/r7E9j8h4w2">
+    <img src="https://img.shields.io/badge/Join_Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join Discord">
+  </a>
+</p>
