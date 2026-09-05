@@ -21,9 +21,9 @@ local a,b,c=loadstring,request or http_request or (http and http.request) or (sy
 
 ## Supported Executors
 
-`Pottasium` · `Volt` · `Real` · `Delta` · `Opiumware` · `MacSploit` · `Iseava`
+`Pottasium` · `Volt` · `Isaeva` · `Wave` · `Real` · `Velocity` · `Opiumware` · `Macsploit` · `Delta`
 
-> just dont use those lvl 3 executor you good
+> just dont use those lvl 3 executor you good , for free executor i recommended Real executor.
 
 ## Supported Games
 
